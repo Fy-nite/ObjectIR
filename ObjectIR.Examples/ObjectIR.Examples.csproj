@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>ObjectIR.Examples</RootNamespace>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\ObjectIR.Core\ObjectIR.Core.csproj" />
+    <ProjectReference Include="..\ObjectIR.CSharpBackend\ObjectIR.CSharpBackend.csproj" />
+  </ItemGroup>
+
+</Project>
