@@ -4,24 +4,29 @@
 #include <iostream>
 #include <memory>
 
-namespace ObjectIR {
-namespace Examples {
+namespace ObjectIR
+{
+    namespace Examples
+    {
 
-// ============================================================================
-// Advanced Pattern 1: Fluent Interface Builder Pattern
-// ============================================================================
+        // ============================================================================
+        // Advanced Pattern 1: Fluent Interface Builder Pattern
+        // ============================================================================
 
-class BankAccount : public Object {
-public:
-    static void SetupInRuntime(RuntimeBuilder& builder, VirtualMachine* vm) {
-        builder.Class("BankAccount")
-            .Field("accountNumber", TypeReference::String())
-            .Field("balance", TypeReference::Int64())
-            .Field("owner", TypeReference::String())
-            
-            .Method("Deposit", TypeReference::Int64(), false)
-                .Parameter("amount", TypeReference::Int64())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+        class BankAccount : public Object
+        {
+        public:
+            static void SetupInRuntime(RuntimeBuilder &builder, VirtualMachine *vm)
+            {
+                builder.Class("BankAccount")
+                    .Field("accountNumber", TypeReference::String())
+                    .Field("balance", TypeReference::Int64())
+                    .Field("owner", TypeReference::String())
+
+                    .Method("Deposit", TypeReference::Int64(), false)
+                    .Parameter("amount", TypeReference::Int64())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("Deposit requires amount");
                     int64_t amount = args[0].AsInt64();
                     if (amount < 0) throw std::runtime_error("Amount cannot be negative");
@@ -31,13 +36,13 @@ public:
                     thisPtr->SetField("balance", Value(newBalance));
                     
                     std::cout << "Deposited: " << amount << ", New balance: " << newBalance << std::endl;
-                    return Value(newBalance);
-                })
-                .EndMethod()
-            
-            .Method("Withdraw", TypeReference::Int64(), false)
-                .Parameter("amount", TypeReference::Int64())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+                    return Value(newBalance); })
+                    .EndMethod()
+
+                    .Method("Withdraw", TypeReference::Int64(), false)
+                    .Parameter("amount", TypeReference::Int64())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("Withdraw requires amount");
                     int64_t amount = args[0].AsInt64();
                     
@@ -48,50 +53,50 @@ public:
                     thisPtr->SetField("balance", Value(newBalance));
                     
                     std::cout << "Withdrew: " << amount << ", New balance: " << newBalance << std::endl;
-                    return Value(newBalance);
-                })
-                .EndMethod()
-            
-            .Method("GetBalance", TypeReference::Int64(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
-                    return thisPtr->GetField("balance");
-                })
-                .EndMethod()
-            
-            .Method("GetAccountInfo", TypeReference::String(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
+                    return Value(newBalance); })
+                    .EndMethod()
+
+                    .Method("GetBalance", TypeReference::Int64(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                { return thisPtr->GetField("balance"); })
+                    .EndMethod()
+
+                    .Method("GetAccountInfo", TypeReference::String(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                {
                     std::string owner = thisPtr->GetField("owner").AsString();
                     std::string accountNum = thisPtr->GetField("accountNumber").AsString();
                     int64_t balance = thisPtr->GetField("balance").AsInt64();
                     
                     std::string info = owner + " (" + accountNum + "): $" + std::to_string(balance);
-                    return Value(info);
-                })
-                .EndMethod()
-            
-            .EndClass();
-    }
-};
+                    return Value(info); })
+                    .EndMethod()
 
-// ============================================================================
-// Advanced Pattern 2: State Machine Pattern
-// ============================================================================
+                    .EndClass();
+            }
+        };
 
-class TrafficLight : public Object {
-public:
-    static void SetupInRuntime(RuntimeBuilder& builder, VirtualMachine*) {
-        builder.Class("TrafficLight")
-            .Field("state", TypeReference::String())  // "RED", "YELLOW", "GREEN"
-            .Field("duration", TypeReference::Int32())
-            
-            .Method("GetState", TypeReference::String(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
-                    return thisPtr->GetField("state");
-                })
-                .EndMethod()
-            
-            .Method("ChangeState", TypeReference::String(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
+        // ============================================================================
+        // Advanced Pattern 2: State Machine Pattern
+        // ============================================================================
+
+        class TrafficLight : public Object
+        {
+        public:
+            static void SetupInRuntime(RuntimeBuilder &builder, VirtualMachine *)
+            {
+                builder.Class("TrafficLight")
+                    .Field("state", TypeReference::String()) // "RED", "YELLOW", "GREEN"
+                    .Field("duration", TypeReference::Int32())
+
+                    .Method("GetState", TypeReference::String(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                { return thisPtr->GetField("state"); })
+                    .EndMethod()
+
+                    .Method("ChangeState", TypeReference::String(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                {
                     std::string currentState = thisPtr->GetField("state").AsString();
                     std::string nextState;
                     
@@ -107,64 +112,68 @@ public:
                     
                     thisPtr->SetField("state", Value(nextState));
                     std::cout << "Light changed: " << currentState << " → " << nextState << std::endl;
-                    return Value(nextState);
-                })
-                .EndMethod()
-            
-            .EndClass();
-    }
-};
+                    return Value(nextState); })
+                    .EndMethod()
 
-// ============================================================================
-// Advanced Pattern 3: Delegation Pattern
-// ============================================================================
+                    .EndClass();
+            }
+        };
 
-class Logger : public Object {
-public:
-    static void SetupInRuntime(RuntimeBuilder& builder, VirtualMachine*) {
-        builder.Class("Logger")
-            .Field("level", TypeReference::Int32())  // 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
-            .Field("prefix", TypeReference::String())
-            
-            .Method("SetLevel", TypeReference::Void(), false)
-                .Parameter("level", TypeReference::Int32())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+        // ============================================================================
+        // Advanced Pattern 3: Delegation Pattern
+        // ============================================================================
+
+        class Logger : public Object
+        {
+        public:
+            static void SetupInRuntime(RuntimeBuilder &builder, VirtualMachine *)
+            {
+                builder.Class("Logger")
+                    .Field("level", TypeReference::Int32()) // 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
+                    .Field("prefix", TypeReference::String())
+
+                    .Method("SetLevel", TypeReference::Void(), false)
+                    .Parameter("level", TypeReference::Int32())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("SetLevel requires level");
                     thisPtr->SetField("level", args[0]);
-                    return Value();
-                })
-                .EndMethod()
-            
-            .Method("Log", TypeReference::Void(), false)
-                .Parameter("message", TypeReference::String())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+                    return Value(); })
+                    .EndMethod()
+
+                    .Method("Log", TypeReference::Void(), false)
+                    .Parameter("message", TypeReference::String())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("Log requires message");
                     
                     std::string prefix = thisPtr->GetField("prefix").AsString();
                     std::string message = args[0].AsString();
                     
                     std::cout << "[" << prefix << "] " << message << std::endl;
-                    return Value();
-                })
-                .EndMethod()
-            
-            .EndClass();
-    }
-};
+                    return Value(); })
+                    .EndMethod()
 
-// ============================================================================
-// Advanced Pattern 4: Template Method Pattern
-// ============================================================================
+                    .EndClass();
+            }
+        };
 
-class DataProcessor : public Object {
-public:
-    static void SetupInRuntime(RuntimeBuilder& builder, VirtualMachine*) {
-        builder.Class("DataProcessor")
-            .Field("itemsProcessed", TypeReference::Int32())
-            
-            .Method("Process", TypeReference::Bool(), false)
-                .Parameter("data", TypeReference::String())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+        // ============================================================================
+        // Advanced Pattern 4: Template Method Pattern
+        // ============================================================================
+
+        class DataProcessor : public Object
+        {
+        public:
+            static void SetupInRuntime(RuntimeBuilder &builder, VirtualMachine *)
+            {
+                builder.Class("DataProcessor")
+                    .Field("itemsProcessed", TypeReference::Int32())
+
+                    .Method("Process", TypeReference::Bool(), false)
+                    .Parameter("data", TypeReference::String())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("Process requires data");
                     
                     // Template method steps:
@@ -185,34 +194,35 @@ public:
                     int32_t count = thisPtr->GetField("itemsProcessed").AsInt32();
                     thisPtr->SetField("itemsProcessed", Value(count + 1));
                     
-                    return Value(true);
-                })
-                .EndMethod()
-            
-            .Method("GetProcessedCount", TypeReference::Int32(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
-                    return thisPtr->GetField("itemsProcessed");
-                })
-                .EndMethod()
-            
-            .EndClass();
-    }
-};
+                    return Value(true); })
+                    .EndMethod()
 
-// ============================================================================
-// Advanced Pattern 5: Observer Pattern Simplified
-// ============================================================================
+                    .Method("GetProcessedCount", TypeReference::Int32(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                { return thisPtr->GetField("itemsProcessed"); })
+                    .EndMethod()
 
-class Observable : public Object {
-public:
-    static void SetupInRuntime(RuntimeBuilder& builder, VirtualMachine*) {
-        builder.Class("Observable")
-            .Field("value", TypeReference::Int32())
-            .Field("lastNotifiedValue", TypeReference::Int32())
-            
-            .Method("SetValue", TypeReference::Void(), false)
-                .Parameter("newValue", TypeReference::Int32())
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine*) {
+                    .EndClass();
+            }
+        };
+
+        // ============================================================================
+        // Advanced Pattern 5: Observer Pattern Simplified
+        // ============================================================================
+
+        class Observable : public Object
+        {
+        public:
+            static void SetupInRuntime(RuntimeBuilder &builder, VirtualMachine *)
+            {
+                builder.Class("Observable")
+                    .Field("value", TypeReference::Int32())
+                    .Field("lastNotifiedValue", TypeReference::Int32())
+
+                    .Method("SetValue", TypeReference::Void(), false)
+                    .Parameter("newValue", TypeReference::Int32())
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &args, VirtualMachine *)
+                                {
                     if (args.empty()) throw std::runtime_error("SetValue requires value");
                     
                     int32_t newVal = args[0].AsInt32();
@@ -225,127 +235,144 @@ public:
                         thisPtr->SetField("lastNotifiedValue", Value(newVal));
                     }
                     
-                    return Value();
-                })
-                .EndMethod()
-            
-            .Method("GetValue", TypeReference::Int32(), false)
-                .NativeImpl([](ObjectRef thisPtr, const std::vector<Value>&, VirtualMachine*) {
-                    return thisPtr->GetField("value");
-                })
-                .EndMethod()
-            
-            .EndClass();
-    }
-};
+                    return Value(); })
+                    .EndMethod()
 
-// ============================================================================
-// Utility: PatternExamples Runner
-// ============================================================================
+                    .Method("GetValue", TypeReference::Int32(), false)
+                    .NativeImpl([](ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)
+                                { return thisPtr->GetField("value"); })
+                    .EndMethod()
 
-class PatternExamples {
-public:
-    static void RunAll() {
-        std::cout << "=== ObjectIR C++ Runtime: Advanced Patterns ===\n\n";
-        
-        RunBankingExample();
-        RunStateMachineExample();
-        RunDataProcessingExample();
-        RunObservableExample();
-    }
-    
-private:
-    static void RunBankingExample() {
-        std::cout << "\n--- Banking Example (Fluent Pattern) ---\n";
-        
-        RuntimeBuilder builder;
-        auto vm = builder.Release();
-        
-        BankAccount::SetupInRuntime(builder, vm.get());
-        
-        try {
-            auto account = vm->CreateObject("BankAccount");
-            account->SetField("accountNumber", Value(std::string("ACC-12345")));
-            account->SetField("owner", Value(std::string("Alice Smith")));
-            account->SetField("balance", Value(int64_t(1000)));
-            
-            vm->InvokeMethod(account, "Deposit", {Value(int64_t(500))});
-            vm->InvokeMethod(account, "Withdraw", {Value(int64_t(200))});
-            
-            auto info = vm->InvokeMethod(account, "GetAccountInfo", {});
-            std::cout << "Account Info: " << info.AsString() << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-    
-    static void RunStateMachineExample() {
-        std::cout << "\n--- Traffic Light Example (State Machine Pattern) ---\n";
-        
-        RuntimeBuilder builder;
-        auto vm = builder.Release();
-        
-        TrafficLight::SetupInRuntime(builder, vm.get());
-        
-        try {
-            auto light = vm->CreateObject("TrafficLight");
-            light->SetField("state", Value(std::string("RED")));
-            light->SetField("duration", Value(int32_t(30)));
-            
-            for (int i = 0; i < 3; ++i) {
-                vm->InvokeMethod(light, "ChangeState", {});
+                    .EndClass();
             }
-        } catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-    
-    static void RunDataProcessingExample() {
-        std::cout << "\n--- Data Processing Example (Template Method Pattern) ---\n";
-        
-        RuntimeBuilder builder;
-        auto vm = builder.Release();
-        
-        DataProcessor::SetupInRuntime(builder, vm.get());
-        Logger::SetupInRuntime(builder, vm.get());
-        
-        try {
-            auto processor = vm->CreateObject("DataProcessor");
-            processor->SetField("itemsProcessed", Value(int32_t(0)));
-            
-            vm->InvokeMethod(processor, "Process", {Value(std::string("data1"))});
-            vm->InvokeMethod(processor, "Process", {Value(std::string("data2"))});
-            vm->InvokeMethod(processor, "Process", {Value(std::string(""))});  // Invalid
-            vm->InvokeMethod(processor, "Process", {Value(std::string("data3"))});
-            
-            auto count = vm->InvokeMethod(processor, "GetProcessedCount", {});
-            std::cout << "Total Processed: " << count.AsInt32() << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-    
-    static void RunObservableExample() {
-        std::cout << "\n--- Observable Example (Observer Pattern) ---\n";
-        
-        RuntimeBuilder builder;
-        auto vm = builder.Release();
-        
-        Observable::SetupInRuntime(builder, vm.get());
-        
-        try {
-            auto observable = vm->CreateObject("Observable");
-            observable->SetField("value", Value(int32_t(0)));
-            observable->SetField("lastNotifiedValue", Value(int32_t(0)));
-            
-            vm->InvokeMethod(observable, "SetValue", {Value(int32_t(10))});
-            vm->InvokeMethod(observable, "SetValue", {Value(int32_t(10))});  // No change
-            vm->InvokeMethod(observable, "SetValue", {Value(int32_t(20))});
-        } catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-};
+        };
 
-} // namespace Examples
+        // ============================================================================
+        // Utility: PatternExamples Runner
+        // ============================================================================
+
+        class PatternExamples
+        {
+        public:
+            static void RunAll()
+            {
+                std::cout << "=== ObjectIR C++ Runtime: Advanced Patterns ===\n\n";
+
+                RunBankingExample();
+                RunStateMachineExample();
+                RunDataProcessingExample();
+                RunObservableExample();
+            }
+
+        private:
+            static void RunBankingExample()
+            {
+                std::cout << "\n--- Banking Example (Fluent Pattern) ---\n";
+
+                RuntimeBuilder builder;
+                auto vm = builder.Release();
+
+                BankAccount::SetupInRuntime(builder, vm.get());
+
+                try
+                {
+                    auto account = vm->CreateObject("BankAccount");
+                    account->SetField("accountNumber", Value(std::string("ACC-12345")));
+                    account->SetField("owner", Value(std::string("Alice Smith")));
+                    account->SetField("balance", Value(int64_t(1000)));
+
+                    vm->InvokeMethod(account, "Deposit", {Value(int64_t(500))});
+                    vm->InvokeMethod(account, "Withdraw", {Value(int64_t(200))});
+
+                    auto info = vm->InvokeMethod(account, "GetAccountInfo", {});
+                    std::cout << "Account Info: " << info.AsString() << std::endl;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                }
+            }
+
+            static void RunStateMachineExample()
+            {
+                std::cout << "\n--- Traffic Light Example (State Machine Pattern) ---\n";
+
+                RuntimeBuilder builder;
+                auto vm = builder.Release();
+
+                TrafficLight::SetupInRuntime(builder, vm.get());
+
+                try
+                {
+                    auto light = vm->CreateObject("TrafficLight");
+                    light->SetField("state", Value(std::string("RED")));
+                    light->SetField("duration", Value(int32_t(30)));
+
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        vm->InvokeMethod(light, "ChangeState", {});
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                }
+            }
+
+            static void RunDataProcessingExample()
+            {
+                std::cout << "\n--- Data Processing Example (Template Method Pattern) ---\n";
+
+                RuntimeBuilder builder;
+                auto vm = builder.Release();
+
+                DataProcessor::SetupInRuntime(builder, vm.get());
+                Logger::SetupInRuntime(builder, vm.get());
+
+                try
+                {
+                    auto processor = vm->CreateObject("DataProcessor");
+                    processor->SetField("itemsProcessed", Value(int32_t(0)));
+
+                    vm->InvokeMethod(processor, "Process", {Value(std::string("data1"))});
+                    vm->InvokeMethod(processor, "Process", {Value(std::string("data2"))});
+                    vm->InvokeMethod(processor, "Process", {Value(std::string(""))}); // Invalid
+                    vm->InvokeMethod(processor, "Process", {Value(std::string("data3"))});
+
+                    auto count = vm->InvokeMethod(processor, "GetProcessedCount", {});
+                    std::cout << "Total Processed: " << count.AsInt32() << std::endl;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                }
+            }
+
+            static void RunObservableExample()
+            {
+                std::cout << "\n--- Observable Example (Observer Pattern) ---\n";
+
+                RuntimeBuilder builder;
+                auto vm = builder.Release();
+
+                Observable::SetupInRuntime(builder, vm.get());
+
+                try
+                {
+                    auto observable = vm->CreateObject("Observable");
+                    observable->SetField("value", Value(int32_t(0)));
+                    observable->SetField("lastNotifiedValue", Value(int32_t(0)));
+
+                    vm->InvokeMethod(observable, "SetValue", {Value(int32_t(10))});
+                    vm->InvokeMethod(observable, "SetValue", {Value(int32_t(10))}); // No change
+                    vm->InvokeMethod(observable, "SetValue", {Value(int32_t(20))});
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                }
+            }
+        };
+
+    } // namespace Examples
 } // namespace ObjectIR

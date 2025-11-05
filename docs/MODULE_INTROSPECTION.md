@@ -6,7 +6,7 @@ Previously, after building an ObjectIR module with the fluent builder API, there
 
 ## The Solution
 
-I've added comprehensive **module serialization and dumping capabilities** that make it trivial to inspect, analyze, export, and validate your modules.
+added comprehensive **module serialization and dumping capabilities** that make it trivial to inspect, analyze, export, and validate your modules.
 
 ## Quick Start
 

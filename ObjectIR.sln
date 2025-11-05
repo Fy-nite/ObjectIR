@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.Tools", "ObjectIR.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.Examples", "ObjectIR.Examples\ObjectIR.Examples.csproj", "{0EF3E2E0-B453-4343-9A63-8F364FFE14BD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.CompilerRuntime", "ObjectIR.CompilerRuntime\ObjectIR.CompilerRuntime.csproj", "{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{0EF3E2E0-B453-4343-9A63-8F364FFE14BD}.Release|x64.Build.0 = Release|Any CPU
 		{0EF3E2E0-B453-4343-9A63-8F364FFE14BD}.Release|x86.ActiveCfg = Release|Any CPU
 		{0EF3E2E0-B453-4343-9A63-8F364FFE14BD}.Release|x86.Build.0 = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|x64.Build.0 = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Debug|x86.Build.0 = Debug|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|x64.ActiveCfg = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|x64.Build.0 = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|x86.ActiveCfg = Release|Any CPU
+		{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

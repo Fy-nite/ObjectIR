@@ -210,7 +210,7 @@ Contributions welcome! Areas of interest:
 
 ## License
 
-MIT License - See LICENSE file for details
+AGPL-V3 License - See LICENSE file for details
 
 ## Inspiration
 
