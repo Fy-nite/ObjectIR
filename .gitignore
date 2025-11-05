@@ -6,6 +6,12 @@
 # dotenv files
 .env
 
+CMakeLists.txt.user
+CMakeFiles/
+build-*/
+build/
+
+
 # User-specific files
 *.rsuser
 *.suo
