@@ -324,7 +324,8 @@ class CalculatorExampleBuilder : ExampleBuilder
 {
     public override Module Build()
     {
-        return ConstructLanguageExample.BuildCalculator();
+        // return ConstructLanguageExample.BuildCalculator();
+        return TodoAppExample.BuildTodoApp();
     }
 }
 
@@ -340,7 +341,7 @@ class ModuleCompositionExampleBuilder : ExampleBuilder
 {
     public override Module Build()
     {
-        return ModuleCompositionExample.BuildModuleComposition();
+        return TodoAppExample.BuildTodoApp();
     }
 }
 
@@ -348,6 +349,6 @@ class ModuleLoaderExampleBuilder : ExampleBuilder
 {
     public override Module Build()
     {
-        return ModuleLoaderExample.BuildModuleLoader();
+        return TodoAppExample.BuildTodoApp();
     }
 }

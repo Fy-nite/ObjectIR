@@ -539,6 +539,12 @@ Name = property.Name,
 
         // Note: Instructions are not loaded since they're not in the serialized data
     }
+
+    public static string ToJson(Module module)
+    {
+        var serializer = new ModuleSerializer(module);
+        return serializer.DumpToJson();
+    }
 }
 
 // ============================================================================

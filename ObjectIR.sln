@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.Tools", "ObjectIR.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.Examples", "ObjectIR.Examples\ObjectIR.Examples.csproj", "{0EF3E2E0-B453-4343-9A63-8F364FFE14BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.CompilerRuntime", "ObjectIR.CompilerRuntime\ObjectIR.CompilerRuntime.csproj", "{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectIR.UnifiedRuntime", "ObjectIR.UnifiedRuntime\ObjectIR.UnifiedRuntime.csproj", "{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
