@@ -8,6 +8,12 @@
 3. Run: `./calculator_example`
 4. Follow: [GETTING_STARTED.md](./GETTING_STARTED.md)
 
+### NEW: For the Runtime Pipeline (Builder → File → Runtime)
+1. **Quick Start**: [QUICK_START_PIPELINE.md](./QUICK_START_PIPELINE.md) - 5 minute intro
+2. **Full Guide**: [RUNTIME_PIPELINE.md](./RUNTIME_PIPELINE.md) - Complete documentation
+3. **Integration**: [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md) - Production setup
+4. **Example**: `cmake --build . --target pipeline_example && ./pipeline_example`
+
 ### For Architects & Designers
 1. Read: [ARCHITECTURE.md](./ARCHITECTURE.md) - System design
 2. Read: [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) - What's included
@@ -28,6 +34,8 @@
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
 | [README.md](./README.md) | Quick reference & API overview | 10 min |
+| [QUICK_START_PIPELINE.md](./QUICK_START_PIPELINE.md) | **NEW** Builder → File → Runtime quick start | 5 min |
+| [RUNTIME_PIPELINE.md](./RUNTIME_PIPELINE.md) | **NEW** Complete pipeline documentation | 30 min |
 | [GETTING_STARTED.md](./GETTING_STARTED.md) | Tutorial & common patterns | 20 min |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Design & internals | 30 min |
 | [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md) | ObjectIR ecosystem integration | 15 min |
@@ -40,9 +48,14 @@
 |------|------|---------|
 | [include/objectir_runtime.hpp](./include/objectir_runtime.hpp) | ~500 lines | Public API & type definitions |
 | [include/patterns.hpp](./include/patterns.hpp) | ~300 lines | Advanced usage patterns |
+| [include/ir_loader.hpp](./include/ir_loader.hpp) | **NEW** ~150 lines | JSON module deserialization |
+| [include/instruction_executor.hpp](./include/instruction_executor.hpp) | **NEW** ~200 lines | IR instruction execution |
 | [src/objectir_runtime.cpp](./src/objectir_runtime.cpp) | ~450 lines | Core implementation |
+| [src/ir_loader.cpp](./src/ir_loader.cpp) | **NEW** ~300 lines | IRLoader implementation |
+| [src/instruction_executor.cpp](./src/instruction_executor.cpp) | **NEW** ~500 lines | Instruction executor |
 | [examples/calculator_example.cpp](./examples/calculator_example.cpp) | ~120 lines | Working example |
 | [examples/todoapp_example.cpp](./examples/todoapp_example.cpp) | ~140 lines | Working example |
+| [examples/pipeline_example.cpp](./examples/pipeline_example.cpp) | **NEW** ~250 lines | Full pipeline example |
 
 ## 🚀 Quick Commands
 

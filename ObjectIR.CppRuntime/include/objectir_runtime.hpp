@@ -158,12 +158,13 @@ using NativeMethodImpl = std::function<Value(ObjectRef thisPtr, const std::vecto
 /// Represents a method definition
 class Method {
 public:
-    Method(std::string name, TypeReference returnType, bool isStatic = false)
-        : _name(std::move(name)), _returnType(returnType), _isStatic(isStatic) {}
+    Method(std::string name, TypeReference returnType, bool isStatic = false, bool isVirtual = false)
+        : _name(std::move(name)), _returnType(returnType), _isStatic(isStatic), _isVirtual(isVirtual) {}
     
     [[nodiscard]] const std::string& GetName() const { return _name; }
     [[nodiscard]] const TypeReference& GetReturnType() const { return _returnType; }
     [[nodiscard]] bool IsStatic() const { return _isStatic; }
+    [[nodiscard]] bool IsVirtual() const { return _isVirtual; }
     [[nodiscard]] const std::vector<std::pair<std::string, TypeReference>>& GetParameters() const { return _parameters; }
     
     void AddParameter(const std::string& name, const TypeReference& type);
@@ -174,6 +175,7 @@ private:
     std::string _name;
     TypeReference _returnType;
     bool _isStatic;
+    bool _isVirtual;
     std::vector<std::pair<std::string, TypeReference>> _parameters;
     NativeMethodImpl _nativeImpl;
 };
@@ -189,6 +191,15 @@ public:
     [[nodiscard]] const std::string& GetName() const { return _name; }
     [[nodiscard]] ClassRef GetBaseClass() const { return _baseClass; }
     void SetBaseClass(ClassRef base) { _baseClass = base; }
+    
+    [[nodiscard]] const std::string& GetNamespace() const { return _namespace; }
+    void SetNamespace(const std::string& ns) { _namespace = ns; }
+    
+    [[nodiscard]] bool IsAbstract() const { return _isAbstract; }
+    void SetAbstract(bool abstract) { _isAbstract = abstract; }
+    
+    [[nodiscard]] bool IsSealed() const { return _isSealed; }
+    void SetSealed(bool sealed) { _isSealed = sealed; }
     
     // Field management
     void AddField(FieldRef field);
@@ -210,10 +221,13 @@ public:
     
 private:
     std::string _name;
+    std::string _namespace;
     ClassRef _baseClass;
     std::vector<FieldRef> _fields;
     std::vector<MethodRef> _methods;
     std::vector<ClassRef> _interfaces;
+    bool _isAbstract = false;
+    bool _isSealed = false;
 };
 
 // ============================================================================
