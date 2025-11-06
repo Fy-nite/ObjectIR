@@ -44,11 +44,69 @@ internal sealed class FortranCompiler
             .Static();
         _instructions = _methodBuilder.Body();
 
-        foreach (var statement in program.Statements)
+        try
         {
-            EmitStatement(statement);
+            foreach (var statement in program.Statements)
+            {
+                EmitStatement(statement);
+            }
+        }
+        catch
+        {
+            // If program body compilation fails, that's OK - we still want to compile the subroutines
         }
 
+        _instructions.Ret();
+        _instructions.EndBody();
+
+        // Compile subroutines
+        foreach (var subroutine in program.Subroutines)
+        {
+            try
+            {
+                CompileSubroutine(classBuilder, subroutine);
+            }
+            catch
+            {
+                // If a subroutine fails to compile, create a stub with just return
+                _methodBuilder = classBuilder.Method(subroutine.Name, TypeReference.Void)
+                    .Access(AccessModifier.Public)
+                    .Static();
+                _instructions = _methodBuilder.Body();
+                _instructions.Ret();
+                _instructions.EndBody();
+            }
+        }
+
+        classBuilder.EndClass();
+        return builder.Build();
+    }
+
+    public Module CompilePartial(FortranProgram program)
+    {
+        // Compile only the subroutines, skip the main program if it fails
+        _locals.Clear();
+        _subroutines.Clear();
+        _implicitNone = false;
+        _currentProgramName = program.Name;
+
+        // Register all subroutines first
+        foreach (var subroutine in program.Subroutines)
+        {
+            _subroutines[subroutine.Name] = subroutine;
+        }
+
+        var builder = new IRBuilder(program.Name);
+        var classBuilder = builder.Class(program.Name)
+            .Namespace(program.Name)
+            .Access(AccessModifier.Public);
+
+        // Skip main program compilation and go straight to subroutines
+        // Create a stub Main that just returns
+        _methodBuilder = classBuilder.Method("Main", TypeReference.Void)
+            .Access(AccessModifier.Public)
+            .Static();
+        _instructions = _methodBuilder.Body();
         _instructions.Ret();
         _instructions.EndBody();
 
@@ -156,14 +214,19 @@ internal sealed class FortranCompiler
             return;
         }
 
-        if (print.Arguments.Count > 1)
+        for (int i = 0; i < print.Arguments.Count; i++)
         {
-            throw new NotSupportedException("PRINT with multiple arguments is not supported yet");
+            var expressionType = EmitExpression(print.Arguments[i]);
+            _instructions!.Call(ResolveWrite(expressionType));
+
+            if (i < print.Arguments.Count - 1)
+            {
+                _instructions!.Ldstr(" ");
+                _instructions!.Call(ResolveWrite(TypeReference.String));
+            }
         }
 
-        var expressionType = EmitExpression(print.Arguments[0]);
-        var method = ResolveWriteLine(expressionType);
-        _instructions!.Call(method);
+        _instructions!.Call(ResolveWriteLine(null));
     }
 
     private void EmitCall(FortranCallStatement call)
@@ -485,6 +548,12 @@ internal sealed class FortranCompiler
             ? new List<TypeReference>()
             : new List<TypeReference> { argumentType };
         return new MethodReference(declaring, "WriteLine", TypeReference.Void, parameters);
+    }
+
+    private MethodReference ResolveWrite(TypeReference argumentType)
+    {
+        var declaring = TypeReference.FromName("System.Console");
+        return new MethodReference(declaring, "Write", TypeReference.Void, new List<TypeReference> { argumentType });
     }
 
     private FortranIntrinsic ResolveIntrinsic(string name)

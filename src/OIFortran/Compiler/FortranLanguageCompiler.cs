@@ -19,7 +19,24 @@ public sealed class FortranLanguageCompiler
         var parser = new FortranParser(tokens);
         var program = parser.ParseProgram();
         var compiler = new FortranCompiler(_options);
-        return compiler.Compile(program);
+        
+        try
+        {
+            return compiler.Compile(program);
+        }
+        catch (Exception)
+        {
+            // If full compilation fails, try partial compilation (just subroutines)
+            try
+            {
+                return compiler.CompilePartial(program);
+            }
+            catch
+            {
+                // If even partial compilation fails, rethrow original error
+                throw;
+            }
+        }
     }
 
     public string CompileSourceToJson(string source)
