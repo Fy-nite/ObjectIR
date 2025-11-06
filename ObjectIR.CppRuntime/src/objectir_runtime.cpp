@@ -1,4 +1,5 @@
 #include "objectir_runtime.hpp"
+#include "instruction_executor.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -150,6 +151,14 @@ void Method::AddParameter(const std::string& name, const TypeReference& type) {
     _parameters.emplace_back(name, type);
 }
 
+void Method::AddLocal(const std::string& name, const TypeReference& type) {
+    _locals.emplace_back(name, type);
+}
+
+void Method::SetInstructions(std::vector<Instruction> instructions) {
+    _instructions = std::move(instructions);
+}
+
 // ============================================================================
 // Class Implementation
 // ============================================================================
@@ -220,7 +229,23 @@ bool Class::ImplementsInterface(ClassRef interface) const {
 // ============================================================================
 
 ExecutionContext::ExecutionContext(MethodRef method)
-    : _method(method), _locals(100) {} // Allocate space for locals
+    : _method(std::move(method)) {
+    if (!_method) {
+        throw std::runtime_error("ExecutionContext requires a valid method reference");
+    }
+
+    const auto& locals = _method->GetLocals();
+    _locals.resize(locals.size());
+    for (size_t i = 0; i < locals.size(); ++i) {
+        _localIndices[locals[i].first] = i;
+    }
+
+    const auto& parameters = _method->GetParameters();
+    _arguments.resize(parameters.size());
+    for (size_t i = 0; i < parameters.size(); ++i) {
+        _parameterIndices[parameters[i].first] = i;
+    }
+}
 
 void ExecutionContext::PushStack(const Value& value) {
     _stack.push_back(value);
@@ -254,6 +279,55 @@ Value ExecutionContext::GetLocal(size_t index) const {
         throw std::out_of_range("Local variable index out of range");
     }
     return _locals[index];
+}
+
+void ExecutionContext::SetLocal(const std::string& name, const Value& value) {
+    auto it = _localIndices.find(name);
+    if (it == _localIndices.end()) {
+        throw std::runtime_error("Local variable not found: " + name);
+    }
+    SetLocal(it->second, value);
+}
+
+Value ExecutionContext::GetLocal(const std::string& name) const {
+    auto it = _localIndices.find(name);
+    if (it == _localIndices.end()) {
+        throw std::runtime_error("Local variable not found: " + name);
+    }
+    return GetLocal(it->second);
+}
+
+void ExecutionContext::SetArguments(const std::vector<Value>& args) {
+    if (args.size() != _arguments.size()) {
+        _arguments.resize(args.size());
+    }
+    std::copy(args.begin(), args.end(), _arguments.begin());
+}
+
+Value ExecutionContext::GetArgument(size_t index) const {
+    if (index >= _arguments.size()) {
+        throw std::out_of_range("Argument index out of range");
+    }
+    return _arguments[index];
+}
+
+Value ExecutionContext::GetArgument(const std::string& name) const {
+    auto it = _parameterIndices.find(name);
+    if (it == _parameterIndices.end()) {
+        throw std::runtime_error("Argument not found: " + name);
+    }
+    return GetArgument(it->second);
+}
+
+void ExecutionContext::SetArgument(const std::string& name, const Value& value) {
+    auto it = _parameterIndices.find(name);
+    if (it == _parameterIndices.end()) {
+        throw std::runtime_error("Argument not found: " + name);
+    }
+    if (it->second >= _arguments.size()) {
+        _arguments.resize(it->second + 1);
+    }
+    _arguments[it->second] = value;
 }
 
 // ============================================================================
@@ -297,11 +371,22 @@ Value VirtualMachine::InvokeMethod(ObjectRef object, const std::string& methodNa
     }
     
     auto impl = method->GetNativeImpl();
-    if (!impl) {
-        throw std::runtime_error("Method has no implementation: " + methodName);
+    if (impl) {
+        return impl(object, args, this);
     }
-    
-    return impl(object, args, this);
+
+    if (method->HasInstructions()) {
+        auto context = std::make_unique<ExecutionContext>(method);
+        context->SetThis(object);
+        context->SetArguments(args);
+        auto* rawContext = context.get();
+        PushContext(std::move(context));
+        auto result = InstructionExecutor::ExecuteInstructions(method->GetInstructions(), object, args, rawContext, this);
+        PopContext();
+        return result;
+    }
+
+    throw std::runtime_error("Method has no implementation: " + methodName);
 }
 
 Value VirtualMachine::InvokeStaticMethod(ClassRef classType, const std::string& methodName, const std::vector<Value>& args) {
@@ -311,11 +396,21 @@ Value VirtualMachine::InvokeStaticMethod(ClassRef classType, const std::string& 
     }
     
     auto impl = method->GetNativeImpl();
-    if (!impl) {
-        throw std::runtime_error("Method has no implementation: " + methodName);
+    if (impl) {
+        return impl(nullptr, args, this);
     }
-    
-    return impl(nullptr, args, this);
+
+    if (method->HasInstructions()) {
+        auto context = std::make_unique<ExecutionContext>(method);
+        context->SetArguments(args);
+        auto* rawContext = context.get();
+        PushContext(std::move(context));
+        auto result = InstructionExecutor::ExecuteInstructions(method->GetInstructions(), nullptr, args, rawContext, this);
+        PopContext();
+        return result;
+    }
+
+    throw std::runtime_error("Method has no implementation: " + methodName);
 }
 
 void VirtualMachine::PushContext(std::unique_ptr<ExecutionContext> context) {

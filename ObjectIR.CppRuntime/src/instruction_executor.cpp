@@ -1,8 +1,103 @@
 #include "instruction_executor.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cctype>
+#include <iostream>
 
 namespace ObjectIR {
+
+namespace {
+
+std::string ToLowerInvariant(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return value;
+}
+
+bool EqualsIgnoreCase(const std::string& lhs, const std::string& rhs) {
+    return ToLowerInvariant(lhs) == ToLowerInvariant(rhs);
+}
+
+Value CreateConstantValue(const Instruction& instr) {
+    if (instr.constantIsNull) {
+        return Value();
+    }
+
+    if (!instr.constantType.empty()) {
+        auto typeLower = ToLowerInvariant(instr.constantType);
+
+        if (typeLower == "system.string" || typeLower == "string") {
+            return Value(instr.constantRawValue);
+        }
+
+        if (typeLower == "system.boolean" || typeLower == "bool" || typeLower == "boolean") {
+            bool boolValue = instr.constantBool;
+            if (instr.constantRawValue.empty()) {
+                return Value(boolValue);
+            }
+            auto valueLower = ToLowerInvariant(instr.constantRawValue);
+            if (valueLower == "true" || valueLower == "1") {
+                boolValue = true;
+            } else if (valueLower == "false" || valueLower == "0") {
+                boolValue = false;
+            }
+            return Value(boolValue);
+        }
+
+        if (typeLower == "system.int32" || typeLower == "int32" || typeLower == "int") {
+            return Value(static_cast<int32_t>(std::stoi(instr.constantRawValue)));
+        }
+
+        if (typeLower == "system.int64" || typeLower == "int64" || typeLower == "long") {
+            return Value(static_cast<int64_t>(std::stoll(instr.constantRawValue)));
+        }
+
+        if (typeLower == "system.single" || typeLower == "single" || typeLower == "float" || typeLower == "float32") {
+            return Value(static_cast<float>(std::stof(instr.constantRawValue)));
+        }
+
+        if (typeLower == "system.double" || typeLower == "double" || typeLower == "float64") {
+            return Value(static_cast<double>(std::stod(instr.constantRawValue)));
+        }
+    }
+
+    if (instr.constantBool) {
+        return Value(instr.constantBool);
+    }
+
+    return Value(instr.constantRawValue);
+}
+
+std::string ValueToString(const Value& value) {
+    if (value.IsNull()) {
+        return "null";
+    }
+    if (value.IsString()) {
+        return value.AsString();
+    }
+    if (value.IsInt32()) {
+        return std::to_string(value.AsInt32());
+    }
+    if (value.IsInt64()) {
+        return std::to_string(value.AsInt64());
+    }
+    if (value.IsFloat32()) {
+        return std::to_string(value.AsFloat32());
+    }
+    if (value.IsFloat64()) {
+        return std::to_string(value.AsFloat64());
+    }
+    if (value.IsBool()) {
+        return value.AsBool() ? "true" : "false";
+    }
+    if (value.IsObject()) {
+        return "<object>";
+    }
+    return "";
+}
+
+} // namespace
 
 OpCode InstructionExecutor::ParseOpCode(const std::string& opStr) {
     if (opStr == "nop") return OpCode::Nop;
@@ -65,33 +160,84 @@ OpCode InstructionExecutor::ParseOpCode(const std::string& opStr) {
 
 Instruction InstructionExecutor::ParseJsonInstruction(const json& instrJson) {
     Instruction instr;
-    
+
     std::string opCodeStr = instrJson.value("opCode", "");
     instr.opCode = ParseOpCode(opCodeStr);
-    
-    if (instrJson.contains("operand") && !instrJson["operand"].is_null()) {
-        const auto& operand = instrJson["operand"];
-        
-        if (operand.is_string()) {
-            instr.operandStr = operand.get<std::string>();
-        } else if (operand.is_number_integer()) {
-            instr.operandInt = operand.get<int32_t>();
-        } else if (operand.is_number_float()) {
-            instr.operandDouble = operand.get<double>();
-        } else if (operand.is_object()) {
-            // Handle complex operands
-            if (operand.contains("value")) {
-                if (operand["value"].is_number_integer()) {
-                    instr.operandInt = operand["value"].get<int32_t>();
-                } else if (operand["value"].is_number_float()) {
-                    instr.operandDouble = operand["value"].get<double>();
-                } else if (operand["value"].is_string()) {
-                    instr.operandStr = operand["value"].get<std::string>();
-                }
-            }
-        }
+
+    if (!instrJson.contains("operand") || instrJson["operand"].is_null()) {
+        return instr;
     }
-    
+
+    const auto& operand = instrJson["operand"];
+
+    switch (instr.opCode) {
+        case OpCode::LdArg:
+        case OpCode::StArg:
+            if (operand.contains("argumentName")) {
+                instr.identifier = operand.value("argumentName", "");
+            }
+            break;
+
+        case OpCode::LdLoc:
+        case OpCode::StLoc:
+            if (operand.contains("localName")) {
+                instr.identifier = operand.value("localName", "");
+            }
+            break;
+
+        case OpCode::LdCon:
+        case OpCode::LdStr:
+            instr.hasConstant = true;
+            if (operand.contains("type")) {
+                instr.constantType = operand.value("type", "");
+            }
+            if (operand.contains("value")) {
+                const auto& valueNode = operand["value"];
+                if (valueNode.is_string()) {
+                    instr.constantRawValue = valueNode.get<std::string>();
+                } else if (valueNode.is_number_integer()) {
+                    instr.constantRawValue = std::to_string(valueNode.get<int64_t>());
+                } else if (valueNode.is_number_float()) {
+                    instr.constantRawValue = std::to_string(valueNode.get<double>());
+                } else if (valueNode.is_boolean()) {
+                    instr.constantBool = valueNode.get<bool>();
+                    instr.constantRawValue = instr.constantBool ? "true" : "false";
+                } else if (valueNode.is_null()) {
+                    instr.constantIsNull = true;
+                }
+            } else {
+                instr.constantIsNull = true;
+            }
+            break;
+
+        case OpCode::Call:
+        case OpCode::CallVirt:
+            if (operand.contains("method")) {
+                const auto& methodJson = operand["method"];
+                CallTarget target;
+                target.declaringType = methodJson.value("declaringType", "");
+                target.name = methodJson.value("name", "");
+                target.returnType = methodJson.value("returnType", "void");
+                if (methodJson.contains("parameterTypes") && methodJson["parameterTypes"].is_array()) {
+                    for (const auto& param : methodJson["parameterTypes"]) {
+                        target.parameterTypes.push_back(param.get<std::string>());
+                    }
+                }
+                instr.callTarget = std::move(target);
+            }
+            break;
+
+        default:
+            if (operand.is_string()) {
+                instr.operandString = operand.get<std::string>();
+            } else if (operand.is_number_integer()) {
+                instr.operandInt = operand.get<int32_t>();
+            } else if (operand.is_number_float()) {
+                instr.operandDouble = operand.get<double>();
+            }
+            break;
+    }
+
     return instr;
 }
 
@@ -117,6 +263,34 @@ void InstructionExecutor::Execute(
         
         case OpCode::Pop: {
             context->PopStack();
+            break;
+        }
+
+        case OpCode::LdArg: {
+            context->PushStack(context->GetArgument(instr.identifier));
+            break;
+        }
+
+        case OpCode::StArg: {
+            auto value = context->PopStack();
+            context->SetArgument(instr.identifier, value);
+            break;
+        }
+
+        case OpCode::LdLoc: {
+            context->PushStack(context->GetLocal(instr.identifier));
+            break;
+        }
+
+        case OpCode::StLoc: {
+            auto value = context->PopStack();
+            context->SetLocal(instr.identifier, value);
+            break;
+        }
+
+        case OpCode::LdCon:
+        case OpCode::LdStr: {
+            context->PushStack(CreateConstantValue(instr));
             break;
         }
         
@@ -148,10 +322,6 @@ void InstructionExecutor::Execute(
             context->PushStack(Value());
             break;
             
-        case OpCode::LdStr:
-            context->PushStack(Value(instr.operandStr));
-            break;
-        
         case OpCode::Add:
             ExecuteAdd(context);
             break;
@@ -203,6 +373,57 @@ void InstructionExecutor::Execute(
         case OpCode::Ret:
             // Return handled at higher level
             break;
+
+        case OpCode::Call:
+        case OpCode::CallVirt: {
+            if (!instr.callTarget.has_value()) {
+                throw std::runtime_error("Call instruction missing target metadata");
+            }
+
+            const auto& target = instr.callTarget.value();
+            std::vector<Value> callArgs;
+            callArgs.reserve(target.parameterTypes.size());
+            for (size_t i = 0; i < target.parameterTypes.size(); ++i) {
+                callArgs.push_back(context->PopStack());
+            }
+            std::reverse(callArgs.begin(), callArgs.end());
+
+            auto isVoidReturn = target.returnType.empty() || target.returnType == "void" || target.returnType == "System.Void";
+
+            if (target.declaringType == "System.Console" && target.name == "WriteLine") {
+                if (callArgs.empty()) {
+                    std::cout << std::endl;
+                } else {
+                    for (size_t i = 0; i < callArgs.size(); ++i) {
+                        if (i > 0) {
+                            std::cout << ' ';
+                        }
+                        std::cout << ValueToString(callArgs[i]);
+                    }
+                    std::cout << std::endl;
+                }
+                break;
+            }
+
+            Value result;
+            if (instr.opCode == OpCode::CallVirt) {
+                auto instanceValue = context->PopStack();
+                if (!instanceValue.IsObject()) {
+                    throw std::runtime_error("CallVirt requires object instance on stack");
+                }
+                auto instance = instanceValue.AsObject();
+                result = vm->InvokeMethod(instance, target.name, callArgs);
+            } else {
+                auto classRef = vm->GetClass(target.declaringType);
+                result = vm->InvokeStaticMethod(classRef, target.name, callArgs);
+            }
+
+            if (!isVoidReturn) {
+                context->PushStack(result);
+            }
+
+            break;
+        }
         
         case OpCode::Break:
         case OpCode::Continue:
@@ -222,14 +443,15 @@ Value InstructionExecutor::ExecuteInstructions(
     VirtualMachine* vm
 ) {
     context->SetThis(thisPtr);
+    context->SetArguments(args);
     
     for (const auto& instr : instructions) {
         if (instr.opCode == OpCode::Ret) {
-            // Return the top stack value
-            if (!instructions.empty()) {
+            try {
                 return context->PopStack();
+            } catch (...) {
+                return Value();
             }
-            return Value();
         }
         
         Execute(instr, context, vm);

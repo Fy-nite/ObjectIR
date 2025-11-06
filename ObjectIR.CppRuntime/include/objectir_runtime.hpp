@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ir_instruction.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -173,10 +174,16 @@ namespace ObjectIR
         [[nodiscard]] bool IsStatic() const { return _isStatic; }
         [[nodiscard]] bool IsVirtual() const { return _isVirtual; }
         [[nodiscard]] const std::vector<std::pair<std::string, TypeReference>> &GetParameters() const { return _parameters; }
+        [[nodiscard]] const std::vector<std::pair<std::string, TypeReference>> &GetLocals() const { return _locals; }
+
+        [[nodiscard]] bool HasInstructions() const { return !_instructions.empty(); }
+        [[nodiscard]] const std::vector<Instruction> &GetInstructions() const { return _instructions; }
 
         void AddParameter(const std::string &name, const TypeReference &type);
+        void AddLocal(const std::string &name, const TypeReference &type);
         void SetNativeImpl(NativeMethodImpl impl) { _nativeImpl = impl; }
         [[nodiscard]] NativeMethodImpl GetNativeImpl() const { return _nativeImpl; }
+        void SetInstructions(std::vector<Instruction> instructions);
 
     private:
         std::string _name;
@@ -184,6 +191,8 @@ namespace ObjectIR
         bool _isStatic;
         bool _isVirtual;
         std::vector<std::pair<std::string, TypeReference>> _parameters;
+        std::vector<std::pair<std::string, TypeReference>> _locals;
+        std::vector<Instruction> _instructions;
         NativeMethodImpl _nativeImpl;
     };
 
@@ -334,9 +343,16 @@ namespace ObjectIR
 
         void SetLocal(size_t index, const Value &value);
         [[nodiscard]] Value GetLocal(size_t index) const;
+        void SetLocal(const std::string &name, const Value &value);
+        [[nodiscard]] Value GetLocal(const std::string &name) const;
 
         [[nodiscard]] ObjectRef GetThis() const { return _this; }
         void SetThis(ObjectRef obj) { _this = obj; }
+
+        void SetArguments(const std::vector<Value> &args);
+        [[nodiscard]] Value GetArgument(size_t index) const;
+        [[nodiscard]] Value GetArgument(const std::string &name) const;
+        void SetArgument(const std::string &name, const Value &value);
 
         [[nodiscard]] MethodRef GetMethod() const { return _method; }
 
@@ -344,7 +360,10 @@ namespace ObjectIR
         MethodRef _method;
         std::vector<Value> _stack;
         std::vector<Value> _locals;
+        std::vector<Value> _arguments;
         ObjectRef _this;
+        std::unordered_map<std::string, size_t> _localIndices;
+        std::unordered_map<std::string, size_t> _parameterIndices;
     };
 
     // ============================================================================

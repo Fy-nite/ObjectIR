@@ -10,8 +10,8 @@ CMakeLists.txt.user
 CMakeFiles/
 build-*/
 build/
-
-
+out/*
+_deps/
 # User-specific files
 *.rsuser
 *.suo

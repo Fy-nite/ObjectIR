@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+
+#pragma warning disable CS1591
 
 /// <summary>
 /// Provides serialization and dumping capabilities for IR modules
@@ -184,47 +187,53 @@ Name = property.Name,
 
     private MethodData DumpMethodData(MethodDefinition method)
     {
+        var instructionsNode = JsonNode.Parse(InstructionSerializer.SerializeInstructions(method.Instructions).GetRawText()) ?? new JsonArray();
+
         return new MethodData
- {
-       Name = method.Name,
-      ReturnType = method.ReturnType.GetQualifiedName(),
+        {
+            Name = method.Name,
+            ReturnType = method.ReturnType.GetQualifiedName(),
             Access = method.Access.ToString(),
             IsStatic = method.IsStatic,
- IsVirtual = method.IsVirtual,
- IsOverride = method.IsOverride,
-        IsAbstract = method.IsAbstract,
-      IsConstructor = method.IsConstructor,
-       Parameters = method.Parameters.Select(p => new ParameterData
-  {
-    Name = p.Name,
-      Type = p.Type.GetQualifiedName()
-            }).ToArray(),
-         LocalVariables = method.Locals.Select(l => new LocalVariableData
+            IsVirtual = method.IsVirtual,
+            IsOverride = method.IsOverride,
+            IsAbstract = method.IsAbstract,
+            IsConstructor = method.IsConstructor,
+            Parameters = method.Parameters.Select(p => new ParameterData
             {
-          Name = l.Name,
-       Type = l.Type.GetQualifiedName()
-  }).ToArray(),
-     InstructionCount = method.Instructions.Count
+                Name = p.Name,
+                Type = p.Type.GetQualifiedName()
+            }).ToArray(),
+            LocalVariables = method.Locals.Select(l => new LocalVariableData
+            {
+                Name = l.Name,
+                Type = l.Type.GetQualifiedName()
+            }).ToArray(),
+            InstructionCount = method.Instructions.Count,
+            Instructions = instructionsNode
         };
-  }
+    }
 
     private FunctionData DumpFunctionData(FunctionDefinition function)
     {
+        var instructionsNode = JsonNode.Parse(InstructionSerializer.SerializeInstructions(function.Instructions).GetRawText()) ?? new JsonArray();
+
         return new FunctionData
         {
             Name = function.Name,
-      ReturnType = function.ReturnType.GetQualifiedName(),
-  Parameters = function.Parameters.Select(p => new ParameterData
-        {
-     Name = p.Name,
-         Type = p.Type.GetQualifiedName()
-       }).ToArray(),
-      LocalVariables = function.Locals.Select(l => new LocalVariableData
+            ReturnType = function.ReturnType.GetQualifiedName(),
+            Parameters = function.Parameters.Select(p => new ParameterData
             {
-        Name = l.Name,
-           Type = l.Type.GetQualifiedName()
+                Name = p.Name,
+                Type = p.Type.GetQualifiedName()
             }).ToArray(),
-            InstructionCount = function.Instructions.Count
+            LocalVariables = function.Locals.Select(l => new LocalVariableData
+            {
+                Name = l.Name,
+                Type = l.Type.GetQualifiedName()
+            }).ToArray(),
+            InstructionCount = function.Instructions.Count,
+            Instructions = instructionsNode
         };
     }
 
@@ -512,7 +521,17 @@ Name = property.Name,
             func.DefineLocal(localData.Name, TypeReference.FromName(localData.Type));
         }
 
-        // Note: Instructions are not loaded
+        if (funcData.Instructions is JsonArray instructionsNode)
+        {
+            using var instructionsDoc = JsonDocument.Parse(instructionsNode.ToJsonString());
+            var instructions = InstructionSerializer.DeserializeInstructions(instructionsDoc.RootElement);
+            foreach (var instruction in instructions)
+            {
+                func.Instructions.Add(instruction);
+            }
+        }
+
+        // Note: Instructions are not loaded if missing
         return func;
     }
 
@@ -537,7 +556,17 @@ Name = property.Name,
             method.DefineLocal(localData.Name, TypeReference.FromName(localData.Type));
         }
 
-        // Note: Instructions are not loaded since they're not in the serialized data
+        if (methodData.Instructions is JsonArray instructionsNode)
+        {
+            using var instructionsDoc = JsonDocument.Parse(instructionsNode.ToJsonString());
+            var instructions = InstructionSerializer.DeserializeInstructions(instructionsDoc.RootElement);
+            foreach (var instruction in instructions)
+            {
+                method.Instructions.Add(instruction);
+            }
+        }
+
+        // Instructions remain empty if missing for compatibility
     }
 
     public static string ToJson(Module module)
@@ -627,6 +656,7 @@ public sealed class MethodData
     public ParameterData[] Parameters { get; set; } = Array.Empty<ParameterData>();
     public LocalVariableData[] LocalVariables { get; set; } = Array.Empty<LocalVariableData>();
     public int InstructionCount { get; set; }
+        public JsonNode? Instructions { get; set; }
 }
 
 /// <summary>
@@ -639,6 +669,7 @@ public sealed class FunctionData
     public ParameterData[] Parameters { get; set; } = Array.Empty<ParameterData>();
     public LocalVariableData[] LocalVariables { get; set; } = Array.Empty<LocalVariableData>();
     public int InstructionCount { get; set; }
+    public JsonNode? Instructions { get; set; }
 }
 
 /// <summary>
@@ -658,3 +689,5 @@ public sealed class LocalVariableData
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
 }
+
+#pragma warning restore CS1591

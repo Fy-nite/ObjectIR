@@ -1,4 +1,5 @@
 #include "ir_loader.hpp"
+#include "instruction_executor.hpp"
 #include <fstream>
 #include <algorithm>
 
@@ -206,12 +207,30 @@ void IRLoader::LoadMethods(
                 std::string paramType = paramJson.value("Type", "object");
                 
                 TypeReference paramTypeRef = ParseTypeReference(nullptr, paramType);
-                // TODO: Add parameter to method
+                method->AddParameter(paramName, paramTypeRef);
             }
         }
-        
-        // Note: Instructions are not currently serialized in JSON format
-        // This is a limitation noted in the C# documentation
+
+        // Load locals
+        if (methodJson.contains("LocalVariables") && methodJson["LocalVariables"].is_array()) {
+            for (const auto& localJson : methodJson["LocalVariables"]) {
+                std::string localName = localJson.value("Name", "");
+                std::string localType = localJson.value("Type", "object");
+                TypeReference localTypeRef = ParseTypeReference(nullptr, localType);
+                method->AddLocal(localName, localTypeRef);
+            }
+        }
+
+        // Load instructions if present
+        if (methodJson.contains("Instructions") && methodJson["Instructions"].is_array()) {
+            std::vector<Instruction> instructions;
+            instructions.reserve(methodJson["Instructions"].size());
+            for (const auto& instructionJson : methodJson["Instructions"]) {
+                instructions.push_back(InstructionExecutor::ParseJsonInstruction(instructionJson));
+            }
+            method->SetInstructions(std::move(instructions));
+        }
+
         classRef->AddMethod(method);
     }
 }
