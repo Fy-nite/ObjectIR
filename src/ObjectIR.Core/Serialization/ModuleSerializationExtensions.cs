@@ -32,6 +32,12 @@ public static class ModuleSerializationExtensions
         => module.Serialize().DumpToText();
 
     /// <summary>
+    /// Dumps the module as BSON (binary JSON) for smaller file sizes
+    /// </summary>
+    public static byte[] DumpBson(this Module module)
+        => module.Serialize().DumpToBson();
+
+    /// <summary>
  /// Dumps the module to an array of type descriptions
     /// </summary>
     public static TypeData[] DumpTypes(this Module module)
@@ -76,4 +82,10 @@ public static class ModuleSerializationExtensions
     /// </summary>
     public static Module LoadFromJson(this Module module, string json)
         => ModuleSerializer.LoadFromJson(json);
+
+    /// <summary>
+    /// Loads a module from BSON (binary JSON) data
+    /// </summary>
+    public static Module LoadFromBson(this Module module, byte[] bsonData)
+        => ModuleSerializer.LoadFromBson(bsonData);
 }

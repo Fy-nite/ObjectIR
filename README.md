@@ -6,8 +6,13 @@
 
 ObjectIR is a typed intermediate representation that sits between high-level OOP languages (C#, Java, C++) and their target runtimes. It combines the precision of stack-based IRs like CIL with structured control flow for better readability and tooling support.
 
+**Primary Design:** ObjectIR is primarily designed for execution on its own high-performance runtime, which provides a unified object model and advanced features for analysis, transformation, and cross-language interoperability.
+
+**Multi-Target Capability:** In addition to its own runtime, ObjectIR can also be compiled to each language's native runtime (such as .NET CIL, JVM bytecode, C++ code, JavaScript, etc.), making it a powerful bridge for multi-platform and multi-language development.
+
 ### Key Features
 
+- **Unified ObjectIR Runtime**: Execute modules directly on the ObjectIR runtime for maximum compatibility and advanced features
 - **Hybrid approach**: CIL-style stack instructions + structured control flow (if/while/for)
 - **Type-safe**: Strongly typed with full generic support
 - **Multi-target**: Compile to .NET CIL, JVM bytecode, JavaScript, C++, Lua, etc.
@@ -191,7 +196,7 @@ See [GRAMMAR.md](docs/GRAMMAR.md) for the complete formal specification.
 - [ ] Core IR implementation ✓ (Done)
 - [ ] Builder API ✓ (Done)
 - [ ] Text format parser
-- [ ] Binary format (for performance)
+- [ ] Binary format (for performance) ✓ (BSON format implemented - [see docs](docs/BSON_SERIALIZATION.md))
 - [ ] C# backend (CIL emission)
 - [ ] JavaScript backend
 - [ ] C++ backend

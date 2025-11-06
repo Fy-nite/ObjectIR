@@ -1,3 +1,3 @@
 using ObjectIR.Examples;
 
-ModuleLoaderExample.Main();
+BsonSerializationExample.Main();

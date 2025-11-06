@@ -1,6 +1,10 @@
 namespace ObjectIR.Core.Serialization;
 
 using ObjectIR.Core.IR;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -569,10 +573,42 @@ Name = property.Name,
         // Instructions remain empty if missing for compatibility
     }
 
+    /// <summary>
+    /// Dumps the module as BSON (binary JSON) for smaller file sizes
+    /// </summary>
+    public byte[] DumpToBson()
+    {
+        var data = DumpModule();
+        var bsonDoc = BsonSerializer.ModuleDataToBson(data);
+        return bsonDoc.ToBson();
+    }
+
+    /// <summary>
+    /// Loads a module from BSON data
+    /// </summary>
+    public static Module LoadFromBson(byte[] bsonData)
+    {
+        using var stream = new MemoryStream(bsonData);
+        using var reader = new BsonBinaryReader(stream);
+        var context = BsonDeserializationContext.CreateRoot(reader);
+        var bsonDoc = BsonDocumentSerializer.Instance.Deserialize(context);
+        var moduleData = BsonSerializer.BsonToModuleData(bsonDoc);
+        return LoadModule(moduleData);
+    }
+
     public static string ToJson(Module module)
     {
         var serializer = new ModuleSerializer(module);
         return serializer.DumpToJson();
+    }
+
+    /// <summary>
+    /// Converts a module to BSON format
+    /// </summary>
+    public static byte[] ToBson(Module module)
+    {
+        var serializer = new ModuleSerializer(module);
+        return serializer.DumpToBson();
     }
 }
 

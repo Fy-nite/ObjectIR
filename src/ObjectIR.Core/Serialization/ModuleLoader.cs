@@ -134,6 +134,35 @@ public sealed class ModuleLoader
     }
 
     /// <summary>
+    /// Loads a module from BSON (binary JSON) format
+    /// </summary>
+    public Module LoadFromBson(byte[] bsonData)
+    {
+        var module = ModuleSerializer.LoadFromBson(bsonData);
+        CacheModule(module);
+        return module;
+    }
+
+    /// <summary>
+    /// Loads a module from a BSON file
+    /// </summary>
+    public Module LoadFromBsonFile(string filePath)
+    {
+        var bsonData = File.ReadAllBytes(filePath);
+        return LoadFromBson(bsonData);
+    }
+
+    /// <summary>
+    /// Saves a module to BSON file for smaller file size
+    /// </summary>
+    public void SaveToBsonFile(Module module, string filePath)
+    {
+        var bsonData = module.DumpBson();
+        File.WriteAllBytes(filePath, bsonData);
+        CacheModule(module);
+    }
+
+    /// <summary>
     /// Gets a cached module by name
     /// </summary>
     public Module? GetCachedModule(string moduleName)
