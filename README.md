@@ -37,7 +37,7 @@ using ObjectIR.Core.IR;
 var builder = new IRBuilder("CalculatorApp");
 
 builder.Class("Calculator")
-    .Field("history", TypeReference.List(TypeReference.Int32))
+    .Field("history", TypeReference.List(TypeReference.Int32)) 
     .Field("lastResult", TypeReference.Int32)
     
     .Method("Add", TypeReference.Int32)
@@ -148,6 +148,15 @@ Example backends:
 | `List<T>` | `List<T>` | `ArrayList<T>` | `std::vector<T>` | `Array` |
 | `Dict<K,V>` | `Dictionary<K,V>` | `HashMap<K,V>` | `std::unordered_map<K,V>` | `Map` |
 | `string` | `string` | `String` | `std::string` | `string` |
+
+## Supported Language Frontends
+
+Currently supported compilers:
+
+- **Construct Language** (`src/ObjectIR.Core/Compilers/ConstructCompiler.cs`) – High-level procedural language with ObjectIR semantics
+- **Fortran 77 (OIFortran)** (`src/OIFortran/Compiler/`) – Classical scientific programming language
+  - **Phase 1 Status:** Programs, subroutines, scalar arithmetic, basic control flow (IF/ELSE, DO loops), PRINT I/O
+  - **Roadmap:** See [FORTRAN_F77_SPEC.md](docs/FORTRAN_F77_SPEC.md) and [FORTRAN_IMPLEMENTATION_PLAN.md](docs/FORTRAN_IMPLEMENTATION_PLAN.md)
 
 ## Use Cases
 
