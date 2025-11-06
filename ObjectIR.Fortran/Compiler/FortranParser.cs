@@ -68,8 +68,87 @@ internal sealed class FortranParser
             Advance();
         }
 
+        // Parse any subroutines after the main program
+        var subroutines = new List<FortranSubroutineDefinition>();
+        while (Check(FortranTokenKind.KeywordSubroutine))
+        {
+            subroutines.Add(ParseSubroutine());
+        }
+
         Consume(FortranTokenKind.EndOfFile, "Unexpected tokens after end program");
-        return new FortranProgram(name, statements);
+        return new FortranProgram(name, statements, subroutines);
+    }
+
+    private FortranSubroutineDefinition ParseSubroutine()
+    {
+        Consume(FortranTokenKind.KeywordSubroutine, "Expected 'subroutine'");
+        string name = Consume(FortranTokenKind.Identifier, "Expected subroutine name").Text;
+
+        var parameters = new List<string>();
+        if (Match(FortranTokenKind.LParen))
+        {
+            if (!Check(FortranTokenKind.RParen))
+            {
+                parameters.Add(Consume(FortranTokenKind.Identifier, "Expected parameter name").Text);
+                while (Match(FortranTokenKind.Comma))
+                {
+                    parameters.Add(Consume(FortranTokenKind.Identifier, "Expected parameter name").Text);
+                }
+            }
+            Consume(FortranTokenKind.RParen, "Expected ')' after parameters");
+        }
+
+        var statements = new List<FortranStatement>();
+        while (!Check(FortranTokenKind.KeywordEnd) && !IsAtEnd)
+        {
+            if (Match(FortranTokenKind.KeywordImplicit))
+            {
+                Consume(FortranTokenKind.KeywordNone, "Expected 'none' after 'implicit'");
+                statements.Add(new FortranImplicitNoneStatement());
+                continue;
+            }
+
+            if (IsTypeSpecifier(Current.Kind))
+            {
+                statements.Add(ParseDeclaration());
+                continue;
+            }
+
+            if (Match(FortranTokenKind.KeywordPrint))
+            {
+                statements.Add(ParsePrintStatement());
+                continue;
+            }
+
+            if (Match(FortranTokenKind.KeywordCall))
+            {
+                statements.Add(ParseCallStatement());
+                continue;
+            }
+
+            if (Match(FortranTokenKind.KeywordReturn))
+            {
+                statements.Add(new FortranReturnStatement());
+                continue;
+            }
+
+            if (Check(FortranTokenKind.Identifier))
+            {
+                statements.Add(ParseAssignment());
+                continue;
+            }
+
+            throw Error(Current, "Unexpected token in subroutine body");
+        }
+
+        Consume(FortranTokenKind.KeywordEnd, "Expected 'end' to close subroutine");
+        Consume(FortranTokenKind.KeywordSubroutine, "Expected 'subroutine' after 'end'");
+        if (Check(FortranTokenKind.Identifier))
+        {
+            Advance();
+        }
+
+        return new FortranSubroutineDefinition(name, parameters, statements);
     }
 
     private FortranStatement ParseDeclaration()

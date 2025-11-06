@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -62,9 +63,11 @@ public static class NativeRuntime
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     public static extern IntPtr InvokeMethod(
         IntPtr vm,
-        [MarshalAs(UnmanagedType.LPStr)] string className,
+        [MarshalAs(UnmanagedType.LPStr)] string? className,
         [MarshalAs(UnmanagedType.LPStr)] string methodName,
-        IntPtr instance);
+        IntPtr instance,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)] IntPtr[]? args,
+        int argCount);
 
     /// <summary>
     /// Create a new instance of a class
@@ -103,6 +106,34 @@ public static class NativeRuntime
     /// </summary>
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr GetLastError();
+
+    // =========================================================================
+    // Value Factory Helpers
+    // =========================================================================
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateNullValue();
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateInt32Value(int value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateInt64Value(long value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateFloat32Value(float value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateFloat64Value(double value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateBoolValue(int value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern IntPtr CreateStringValue([MarshalAs(UnmanagedType.LPStr)] string? value);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr CreateObjectValue(IntPtr objectHandle);
 }
 
 /// <summary>
@@ -167,25 +198,65 @@ public class RuntimeWrapper : IDisposable
     }
 
     /// <summary>
-    /// Invoke a method on an object
+    /// Invoke a method on an object with optional arguments
     /// </summary>
-    public RuntimeValue InvokeMethod(string className, string methodName, RuntimeObject instance)
+    public RuntimeValue InvokeMethod(string? className, string methodName, RuntimeObject? instance, params object?[] args)
     {
         if (_disposed)
             throw new ObjectDisposedException(nameof(RuntimeWrapper));
 
-        IntPtr valueHandle = NativeRuntime.InvokeMethod(
-            _vmHandle,
-            className,
-            methodName,
-            instance?.Handle ?? IntPtr.Zero);
+        IntPtr instanceHandle = instance?.Handle ?? IntPtr.Zero;
 
-        if (valueHandle == IntPtr.Zero)
+        IntPtr[]? argHandles = null;
+        List<RuntimeValue>? temporaryValues = null;
+
+        if (args is { Length: > 0 })
         {
-            throw new RuntimeException($"Failed to invoke method '{methodName}' on class '{className}'");
+            argHandles = new IntPtr[args.Length];
+
+            for (int i = 0; i < args.Length; ++i)
+            {
+                object? argument = args[i];
+
+                if (argument is RuntimeValue runtimeValue)
+                {
+                    if (runtimeValue.Handle == IntPtr.Zero)
+                    {
+                        throw new RuntimeException("RuntimeValue argument has been disposed");
+                    }
+                    argHandles[i] = runtimeValue.Handle;
+                    continue;
+                }
+
+                RuntimeValue tempValue = CreateRuntimeValue(argument);
+                (temporaryValues ??= new List<RuntimeValue>()).Add(tempValue);
+                argHandles[i] = tempValue.Handle;
+            }
         }
 
-        return new RuntimeValue(valueHandle);
+        try
+        {
+            IntPtr valueHandle = NativeRuntime.InvokeMethod(
+                _vmHandle,
+                className,
+                methodName,
+                instanceHandle,
+                argHandles,
+                argHandles?.Length ?? 0);
+
+            CheckError(valueHandle);
+            return new RuntimeValue(valueHandle);
+        }
+        finally
+        {
+            if (temporaryValues != null)
+            {
+                foreach (RuntimeValue value in temporaryValues)
+                {
+                    value.Dispose();
+                }
+            }
+        }
     }
 
     public void Dispose()
@@ -206,6 +277,34 @@ public class RuntimeWrapper : IDisposable
     ~RuntimeWrapper()
     {
         Dispose();
+    }
+
+    private static RuntimeValue CreateRuntimeValue(object? value)
+    {
+        IntPtr handle = value switch
+        {
+            null => NativeRuntime.CreateNullValue(),
+            int i => NativeRuntime.CreateInt32Value(i),
+            long l => NativeRuntime.CreateInt64Value(l),
+            short s => NativeRuntime.CreateInt32Value(s),
+            sbyte sb => NativeRuntime.CreateInt32Value(sb),
+            byte b8 => NativeRuntime.CreateInt32Value(b8),
+            ushort us => NativeRuntime.CreateInt32Value(us),
+            uint ui => NativeRuntime.CreateInt64Value(ui),
+            ulong ul when ul <= long.MaxValue => NativeRuntime.CreateInt64Value((long)ul),
+            float f => NativeRuntime.CreateFloat32Value(f),
+            double d => NativeRuntime.CreateFloat64Value(d),
+            decimal m => NativeRuntime.CreateFloat64Value((double)m),
+            bool b => NativeRuntime.CreateBoolValue(b ? 1 : 0),
+            string s => NativeRuntime.CreateStringValue(s),
+            RuntimeObject obj when obj.Handle != IntPtr.Zero => NativeRuntime.CreateObjectValue(obj.Handle),
+            RuntimeObject => throw new ObjectDisposedException(nameof(RuntimeObject)),
+            ulong ul => throw new ArgumentOutOfRangeException(nameof(value), ul, "Value exceeds Int64 range"),
+            _ => throw new ArgumentException($"Unsupported argument type: {value.GetType().FullName}")
+        };
+
+        CheckError(handle);
+        return new RuntimeValue(handle);
     }
 
     private static void CheckError(IntPtr result)

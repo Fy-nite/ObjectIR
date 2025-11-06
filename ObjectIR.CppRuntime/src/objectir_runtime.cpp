@@ -337,7 +337,14 @@ void ExecutionContext::SetArgument(const std::string& name, const Value& value) 
 VirtualMachine::VirtualMachine() = default;
 
 void VirtualMachine::RegisterClass(ClassRef classType) {
+    // Register by simple name
     _classes[classType->GetName()] = classType;
+    
+    // Also register by qualified name (namespace.name) if namespace is set
+    if (!classType->GetNamespace().empty()) {
+        std::string qualifiedName = classType->GetNamespace() + "." + classType->GetName();
+        _classes[qualifiedName] = classType;
+    }
 }
 
 ClassRef VirtualMachine::GetClass(const std::string& name) const {
@@ -345,6 +352,17 @@ ClassRef VirtualMachine::GetClass(const std::string& name) const {
     if (it != _classes.end()) {
         return it->second;
     }
+    
+    // If not found and name contains a dot, try just the simple name
+    size_t lastDot = name.find_last_of('.');
+    if (lastDot != std::string::npos) {
+        std::string simpleName = name.substr(lastDot + 1);
+        auto simpleIt = _classes.find(simpleName);
+        if (simpleIt != _classes.end()) {
+            return simpleIt->second;
+        }
+    }
+    
     throw std::runtime_error("Class not found: " + name);
 }
 

@@ -9,6 +9,8 @@ internal enum FortranTokenKind
     StringLiteral,
     KeywordProgram,
     KeywordEnd,
+    KeywordSubroutine,
+    KeywordReturn,
     KeywordImplicit,
     KeywordNone,
     KeywordInteger,

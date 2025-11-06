@@ -1,0 +1,101 @@
+{
+  "Name": "hello",
+  "Version": "1.0.0",
+  "Metadata": {},
+  "Types": [
+    {
+      "Kind": "Class",
+      "Name": "hello",
+      "Namespace": "hello",
+      "Access": "Public",
+      "IsAbstract": false,
+      "IsSealed": false,
+      "Interfaces": [],
+      "BaseInterfaces": [],
+      "GenericParameters": [],
+      "Fields": [],
+      "Methods": [
+        {
+          "Name": "Main",
+          "ReturnType": "void",
+          "Access": "Public",
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsOverride": false,
+          "IsAbstract": false,
+          "IsConstructor": false,
+          "Parameters": [],
+          "LocalVariables": [],
+          "InstructionCount": 3,
+          "Instructions": [
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "hello",
+                  "name": "greet",
+                  "returnType": "void",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "hello",
+                  "name": "greet",
+                  "returnType": "void",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "greet",
+          "ReturnType": "void",
+          "Access": "Public",
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsOverride": false,
+          "IsAbstract": false,
+          "IsConstructor": false,
+          "Parameters": [],
+          "LocalVariables": [],
+          "InstructionCount": 3,
+          "Instructions": [
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Hello from subroutine!",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        }
+      ],
+      "Properties": []
+    }
+  ],
+  "Functions": []
+}

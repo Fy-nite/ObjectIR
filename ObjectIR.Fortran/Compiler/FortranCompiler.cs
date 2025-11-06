@@ -8,10 +8,12 @@ namespace ObjectIR.Fortran.Compiler;
 internal sealed class FortranCompiler
 {
     private readonly Dictionary<string, TypeReference> _locals = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, FortranSubroutineDefinition> _subroutines = new(StringComparer.OrdinalIgnoreCase);
     private MethodBuilder? _methodBuilder;
     private InstructionBuilder? _instructions;
     private bool _implicitNone;
     private readonly FortranCompilationOptions _options;
+    private string? _currentProgramName;
 
     public FortranCompiler(FortranCompilationOptions? options = null)
     {
@@ -21,13 +23,22 @@ internal sealed class FortranCompiler
     public Module Compile(FortranProgram program)
     {
         _locals.Clear();
+        _subroutines.Clear();
         _implicitNone = false;
+        _currentProgramName = program.Name;
+
+        // Register all subroutines first
+        foreach (var subroutine in program.Subroutines)
+        {
+            _subroutines[subroutine.Name] = subroutine;
+        }
 
         var builder = new IRBuilder(program.Name);
         var classBuilder = builder.Class(program.Name)
             .Namespace(program.Name)
             .Access(AccessModifier.Public);
 
+        // Compile main program
         _methodBuilder = classBuilder.Method("Main", TypeReference.Void)
             .Access(AccessModifier.Public)
             .Static();
@@ -40,8 +51,51 @@ internal sealed class FortranCompiler
 
         _instructions.Ret();
         _instructions.EndBody();
+
+        // Compile subroutines
+        foreach (var subroutine in program.Subroutines)
+        {
+            CompileSubroutine(classBuilder, subroutine);
+        }
+
         classBuilder.EndClass();
         return builder.Build();
+    }
+
+    private void CompileSubroutine(ClassBuilder classBuilder, FortranSubroutineDefinition subroutine)
+    {
+        // Clear locals for new scope
+        var previousLocals = new Dictionary<string, TypeReference>(_locals);
+        _locals.Clear();
+
+        _methodBuilder = classBuilder.Method(subroutine.Name, TypeReference.Void)
+            .Access(AccessModifier.Public)
+            .Static();
+
+        // Add parameters as locals
+        foreach (var param in subroutine.Parameters)
+        {
+            _locals[param] = TypeReference.Void;
+            _methodBuilder.Local(param, TypeReference.Void);
+        }
+
+        _instructions = _methodBuilder.Body();
+
+        foreach (var statement in subroutine.Statements)
+        {
+            EmitStatement(statement);
+        }
+
+        // Add implicit return if not already present
+        _instructions.Ret();
+        _instructions.EndBody();
+
+        // Restore previous locals
+        _locals.Clear();
+        foreach (var kvp in previousLocals)
+        {
+            _locals[kvp.Key] = kvp.Value;
+        }
     }
 
     private void EmitStatement(FortranStatement statement)
@@ -62,6 +116,9 @@ internal sealed class FortranCompiler
                 break;
             case FortranCallStatement call:
                 EmitCall(call);
+                break;
+            case FortranReturnStatement:
+                _instructions!.Ret();
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported statement type: {statement.GetType().Name}");
@@ -111,6 +168,30 @@ internal sealed class FortranCompiler
 
     private void EmitCall(FortranCallStatement call)
     {
+        // First check if it's a user-defined subroutine
+        if (_subroutines.TryGetValue(call.Name, out var subroutine))
+        {
+            // Emit arguments
+            foreach (var arg in call.Arguments)
+            {
+                EmitExpression(arg);
+            }
+            
+            // Call the subroutine as a static method
+            // Use the qualified type name (namespace.classname) to match the compiled class
+            string qualifiedTypeName = $"{_currentProgramName}.{_currentProgramName}";
+            var declaringType = TypeReference.FromName(qualifiedTypeName);
+            var methodRef = new MethodReference(
+                declaringType,
+                subroutine.Name,
+                TypeReference.Void,
+                call.Arguments.Select(_ => TypeReference.Void).ToList()
+            );
+            _instructions!.Call(methodRef);
+            return;
+        }
+
+        // Fall back to intrinsics
         if (!_options.Intrinsics.TryGet(call.Name, out var intrinsic))
         {
             throw new InvalidOperationException($"No intrinsic or binding registered for procedure '{call.Name}'");

@@ -13,10 +13,11 @@ FetchContent_Declare(json
 FetchContent_MakeAvailable(json)
 
 # Add the library
-add_library(objectir_runtime 
+add_library(objectir_runtime SHARED
     src/objectir_runtime.cpp
     src/ir_loader.cpp
     src/instruction_executor.cpp
+    src/runtime_c_api.cpp
 )
 
 # Public include directory

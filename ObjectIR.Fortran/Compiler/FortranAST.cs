@@ -6,11 +6,13 @@ internal sealed class FortranProgram
 {
     public string Name { get; }
     public IReadOnlyList<FortranStatement> Statements { get; }
+    public IReadOnlyList<FortranSubroutineDefinition> Subroutines { get; }
 
-    public FortranProgram(string name, IReadOnlyList<FortranStatement> statements)
+    public FortranProgram(string name, IReadOnlyList<FortranStatement> statements, IReadOnlyList<FortranSubroutineDefinition>? subroutines = null)
     {
         Name = name;
         Statements = statements;
+        Subroutines = subroutines ?? [];
     }
 }
 
@@ -79,6 +81,22 @@ internal sealed class FortranCallStatement : FortranStatement
     {
         Name = name;
         Arguments = arguments;
+    }
+}
+
+internal sealed class FortranReturnStatement : FortranStatement { }
+
+internal sealed class FortranSubroutineDefinition
+{
+    public string Name { get; }
+    public IReadOnlyList<string> Parameters { get; }
+    public IReadOnlyList<FortranStatement> Statements { get; }
+
+    public FortranSubroutineDefinition(string name, IReadOnlyList<string> parameters, IReadOnlyList<FortranStatement> statements)
+    {
+        Name = name;
+        Parameters = parameters;
+        Statements = statements;
     }
 }
 

@@ -13,6 +13,8 @@ internal sealed class FortranLexer
     {
         ["program"] = FortranTokenKind.KeywordProgram,
         ["end"] = FortranTokenKind.KeywordEnd,
+        ["subroutine"] = FortranTokenKind.KeywordSubroutine,
+        ["return"] = FortranTokenKind.KeywordReturn,
         ["implicit"] = FortranTokenKind.KeywordImplicit,
         ["none"] = FortranTokenKind.KeywordNone,
         ["integer"] = FortranTokenKind.KeywordInteger,
