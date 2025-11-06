@@ -47,7 +47,7 @@ This document describes the architecture and design decisions of ObjectIR.
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Target Runtimes                           │
-│         (.NET, JVM, Native, Browser, Lua VM)                │
+│         (.NET, JVM, Native, Browser, Lua VM, ObjectIR runtime)                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
