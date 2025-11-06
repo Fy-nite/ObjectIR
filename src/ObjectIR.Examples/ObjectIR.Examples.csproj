@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\ObjectIR.Core\ObjectIR.Core.csproj" />
+    <ProjectReference Include="..\ObjectIR.Core\ObjectIR.Core.csproj" />
     <ProjectReference Include="..\ObjectIR.CSharpBackend\ObjectIR.CSharpBackend.csproj" />
   </ItemGroup>
 

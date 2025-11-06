@@ -1,8 +1,12 @@
-# Set paths
-$cppRuntimePath = "ObjectIR.CppRuntime"
-$unifiedRuntimePath = "ObjectIR.UnifiedRuntime"
-$fortranpath = "ObjectIR.Fortran"
-$outputPath = "out"
+
+# Set working directory to the script's location
+Set-Location $PSScriptRoot
+
+# Set paths relative to script directory
+$cppRuntimePath = "$PSScriptRoot/src/ObjectIR.CppRuntime"
+$unifiedRuntimePath = "$PSScriptRoot/src/OIRRuntime"
+$fortranpath = "$PSScriptRoot/src/OIFortran"
+$outputPath = "$PSScriptRoot/out"
 
 # Build C++ runtime
 cd $cppRuntimePath
@@ -48,3 +52,4 @@ Copy-Item "$fortranpath/bin/Release/net9.0/*" $outputPath -Recurse
 # Copy-Item "README.md" $outputPath
 
 Write-Host "Build and copy complete. Output in $outputPath"
+set-location $PSScriptRoot
