@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ObjectIR.Core\ObjectIR.Core.csproj" />
-    <ProjectReference Include="..\ObjectIR.Fortran\ObjectIR.Fortran.csproj" />
+    <ProjectReference Include="..\OIFortran\OIFortran.csproj" />
   </ItemGroup>
 
   <ItemGroup>

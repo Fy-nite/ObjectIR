@@ -39,7 +39,24 @@ class Program
         {
             if (args.Length == 0)
             {
+                PrintBanner();
                 ShowUsage();
+                ShowExamples();
+                return;
+            }
+
+            // Global flags
+            if (args.Contains("--help") || args.Contains("-h"))
+            {
+                PrintBanner();
+                ShowUsage();
+                ShowExamples();
+                return;
+            }
+            if (args.Contains("--version"))
+            {
+                PrintBanner();
+                Console.WriteLine("ObjectIR Unified Runtime v1.0.0");
                 return;
             }
 
@@ -49,13 +66,16 @@ class Program
             {
                 case "debug":
                     Debug = true;
+                    Console.WriteLine("Debug mode enabled.");
                     break;
 
                 case "run":
-                    // run <module.json> - Execute a module in C++ runtime
                     if (args.Length < 2)
                     {
-                        Console.Error.WriteLine("Error: 'run' command requires a module JSON file");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine("Error: 'run' command requires a module JSON file.");
+                        Console.ResetColor();
+                        ShowUsage();
                         return;
                     }
                     var invocationArgs = args.Length > 2 ? args[2..] : Array.Empty<string>();
@@ -63,20 +83,24 @@ class Program
                     break;
 
                 case "compile":
-                    // compile <module.json> - Compile module to C# code
                     if (args.Length < 2)
                     {
-                        Console.Error.WriteLine("Error: 'compile' command requires a module JSON file");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine("Error: 'compile' command requires a module JSON file.");
+                        Console.ResetColor();
+                        ShowUsage();
                         return;
                     }
                     CompileModuleToCSharp(args[1]);
                     break;
 
                 case "build-and-run":
-                    // build-and-run <example-name> - Build example and run in C++ runtime
                     if (args.Length < 2)
                     {
-                        Console.Error.WriteLine("Error: 'build-and-run' command requires an example name");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine("Error: 'build-and-run' command requires an example name.");
+                        Console.ResetColor();
+                        ShowUsage();
                         ShowExamples();
                         return;
                     }
@@ -84,10 +108,12 @@ class Program
                     break;
 
                 case "build":
-                    // build <example-name> - Build example and save to JSON
                     if (args.Length < 2)
                     {
-                        Console.Error.WriteLine("Error: 'build' command requires an example name");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine("Error: 'build' command requires an example name.");
+                        Console.ResetColor();
+                        ShowUsage();
                         ShowExamples();
                         return;
                     }
@@ -95,10 +121,12 @@ class Program
                     break;
 
                 case "pipeline":
-                    // pipeline <example-name> - Run full pipeline: build -> serialize -> codegen -> execute
                     if (args.Length < 2)
                     {
-                        Console.Error.WriteLine("Error: 'pipeline' command requires an example name");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine("Error: 'pipeline' command requires an example name.");
+                        Console.ResetColor();
+                        ShowUsage();
                         ShowExamples();
                         return;
                     }
@@ -108,24 +136,81 @@ class Program
                 case "help":
                 case "-h":
                 case "--help":
+                    PrintBanner();
                     ShowUsage();
+                    ShowExamples();
                     break;
 
                 default:
+                    Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.Error.WriteLine($"Unknown command: {command}");
+                    Console.ResetColor();
                     ShowUsage();
+                    ShowExamples();
+                    SuggestClosestCommand(command);
                     break;
             }
         }
         catch (Exception ex)
         {
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine($"Error: {ex.Message}");
+            Console.ResetColor();
             if (args.Contains("--verbose"))
             {
                 Console.Error.WriteLine(ex.StackTrace);
             }
             Environment.Exit(1);
         }
+    }
+
+    static void PrintBanner()
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("\n=== ObjectIR Unified Runtime ===\n");
+        Console.ResetColor();
+    }
+
+    static void SuggestClosestCommand(string input)
+    {
+        var commands = new[] { "run", "compile", "build", "build-and-run", "pipeline", "help" };
+        string? suggestion = null;
+        int minDistance = int.MaxValue;
+        foreach (var cmd in commands)
+        {
+            int dist = LevenshteinDistance(input, cmd);
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                suggestion = cmd;
+            }
+        }
+        if (minDistance <= 3 && suggestion != null)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"Did you mean '{suggestion}'?");
+            Console.ResetColor();
+        }
+    }
+
+    static int LevenshteinDistance(string a, string b)
+    {
+        if (string.IsNullOrEmpty(a)) return b.Length;
+        if (string.IsNullOrEmpty(b)) return a.Length;
+        int[,] d = new int[a.Length + 1, b.Length + 1];
+        for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= b.Length; j++) d[0, j] = j;
+        for (int i = 1; i <= a.Length; i++)
+        {
+            for (int j = 1; j <= b.Length; j++)
+            {
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[a.Length, b.Length];
     }
 
     /// <summary>
@@ -602,36 +687,19 @@ class Program
 
     static void ShowUsage()
     {
-        Console.WriteLine(@"
-ObjectIR Unified Runtime - Compiler + C++ Runtime Integration
+                    Console.WriteLine($@"
+    Usage:
+        {System.Reflection.Assembly.GetExecutingAssembly().GetName().Name} <command> [options]
 
-This tool combines the ObjectIR Construct compiler with the high-performance
-C++ runtime, enabling end-to-end compilation and execution in a single tool.
-
-Usage:
-  objectir-unified <command> [options]
-
-Commands:
-    run <module.json> [args...]     Execute module entry point in C++ runtime
-  compile <module.json>            Compile module to C# code
-  build <example>                  Build example to JSON file
-  build-and-run <example>          Build example and execute in C++ runtime
-  pipeline <example>               Run full pipeline: build → serialize → codegen → execute
-  help                             Show this help message
-
-Examples:
-    objectir-unified run TodoApp.json
-    objectir-unified run main.oir
-  objectir-unified build calculator
-  objectir-unified build-and-run todoapp
-  objectir-unified pipeline todoapp
-
-Available Examples:
-  - calculator                     Simple calculator with arithmetic
-  - todoapp                        Todo application with list management
-  - modulecomposition              Demonstrates module composition patterns
-  - moduleloader                   Shows module loading capabilities
-");
+    Commands:
+        run <module.json> [args...]     Execute module entry point in C++ runtime
+        compile <module.json>           Compile module to C# code
+        build <example>                 Build example to JSON file
+        build-and-run <example>         Build example and execute in C++ runtime
+        pipeline <example>              Run full pipeline: build → serialize → codegen → execute
+        help                            Show this help message
+        --version                       Show version information
+    ");
     }
 
     static void ShowExamples()
