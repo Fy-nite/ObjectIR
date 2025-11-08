@@ -26,66 +26,66 @@ using namespace ObjectIR;
 
 std::string BuildExampleJson() {
     return R"({
-  "Name": "CalculatorModule",
-  "Version": "1.0.0",
-  "Types": [
+  "name": "CalculatorModule",
+  "version": "1.0.0",
+  "types": [
     {
-      "Kind": "Class",
-      "Name": "Calculator",
-      "Namespace": "Examples",
-      "Access": "Public",
-      "IsAbstract": false,
-      "IsSealed": false,
-      "Fields": [
+      "kind": "class",
+      "name": "Calculator",
+      "namespace": "Examples",
+      "access": "Public",
+      "isAbstract": false,
+      "isSealed": false,
+      "fields": [
         {
-          "Name": "lastResult",
-          "Type": "int32",
-          "Access": "Private",
-          "IsReadOnly": false
+          "name": "lastResult",
+          "type": "int32",
+          "access": "Private",
+          "isReadOnly": false
         }
       ],
-      "Methods": [
+      "methods": [
         {
-          "Name": "Add",
-          "ReturnType": "int32",
-          "Access": "Public",
-          "IsStatic": false,
-          "IsVirtual": false,
-          "IsAbstract": false,
-          "Parameters": [
+          "name": "Add",
+          "returnType": "int32",
+          "access": "Public",
+          "static": false,
+          "isVirtual": false,
+          "isAbstract": false,
+          "parameters": [
             {
-              "Name": "a",
-              "Type": "int32"
+              "name": "a",
+              "type": "int32"
             },
             {
-              "Name": "b",
-              "Type": "int32"
+              "name": "b",
+              "type": "int32"
             }
           ]
         },
         {
-          "Name": "Multiply",
-          "ReturnType": "int32",
-          "Access": "Public",
-          "IsStatic": false,
-          "IsVirtual": false,
-          "IsAbstract": false,
-          "Parameters": [
+          "name": "Multiply",
+          "returnType": "int32",
+          "access": "Public",
+          "static": false,
+          "isVirtual": false,
+          "isAbstract": false,
+          "parameters": [
             {
-              "Name": "x",
-              "Type": "int32"
+              "name": "x",
+              "type": "int32"
             },
             {
-              "Name": "y",
-              "Type": "int32"
+              "name": "y",
+              "type": "int32"
             }
           ]
         }
       ],
-      "Properties": []
+      "properties": []
     }
   ],
-  "Functions": []
+  "functions": []
 })";
 }
 

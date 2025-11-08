@@ -601,6 +601,550 @@ Name = property.Name,
     }
 
     /// <summary>
+    /// Dumps the module as FOB (Finite Open Bytecode) binary format
+    /// </summary>
+    public byte[] DumpToFOB()
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+
+        // Get module data
+        var moduleData = DumpModule();
+
+        // Build string table
+        var strings = BuildStringTable(moduleData);
+        var stringIndices = strings.Select((s, i) => (s, i)).ToDictionary(x => x.s, x => x.i);
+
+        // Build type table
+        var types = moduleData.Types ?? Array.Empty<TypeData>();
+        var typeIndices = types.Select((t, i) => (t, i)).ToDictionary(x => x.t, x => x.i);
+
+        // Write FOB header (with placeholder for file size)
+        long fileSizePos = WriteFOBHeader(writer, strings, types);
+
+        // Write sections
+        WriteStringsSection(writer, strings);
+        WriteTypesSection(writer, types, stringIndices, typeIndices);
+        WriteCodeSection(writer, moduleData);
+        WriteConstantsSection(writer, moduleData);
+
+        // Update file size in header
+        long fileSize = writer.BaseStream.Position;
+        writer.BaseStream.Position = fileSizePos;
+        writer.Write((uint)fileSize);
+        writer.BaseStream.Position = fileSize;
+
+        return stream.ToArray();
+    }
+
+    private long WriteFOBHeader(BinaryWriter writer, List<string> strings, TypeData[] types)
+    {
+        // Magic: "FOB"
+        writer.Write((byte)'F');
+        writer.Write((byte)'O');
+        writer.Write((byte)'B');
+
+        // Fork name length and name: "OBJECTIR,FOB"
+        string forkName = "OBJECTIR,FOB";
+        writer.Write((byte)forkName.Length);
+        writer.Write(Encoding.UTF8.GetBytes(forkName));
+
+        // File size placeholder (will be updated at end)
+        long fileSizePos = writer.BaseStream.Position;
+        writer.Write(0u); // fileSize
+
+        // Entry point (index of main method, -1 for now)
+        writer.Write(0xFFFFFFFFu); // entryPoint
+
+        return fileSizePos;
+    }
+
+    private void WriteStringsSection(BinaryWriter writer, List<string> strings)
+    {
+        // Section header
+        WriteSectionHeader(writer, ".strings", 0); // offset placeholder
+
+        long sectionStart = writer.BaseStream.Position;
+
+        // String count
+        writer.Write(strings.Count);
+
+        // Strings
+        foreach (var str in strings)
+        {
+            var bytes = Encoding.UTF8.GetBytes(str);
+            writer.Write(bytes.Length);
+            writer.Write(bytes);
+        }
+
+        // Update section size
+        long sectionEnd = writer.BaseStream.Position;
+        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+    }
+
+    private void WriteTypesSection(BinaryWriter writer, TypeData[] types, Dictionary<string, int> stringIndices, Dictionary<TypeData, int> typeIndices)
+    {
+        // Section header
+        WriteSectionHeader(writer, ".types", 0); // offset placeholder
+
+        long sectionStart = writer.BaseStream.Position;
+
+        // Type count
+        writer.Write(types.Length);
+
+        foreach (var type in types)
+        {
+            WriteTypeDefinition(writer, type, stringIndices, typeIndices);
+        }
+
+        // Update section size
+        long sectionEnd = writer.BaseStream.Position;
+        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+    }
+
+    private void WriteTypeDefinition(BinaryWriter writer, TypeData type, Dictionary<string, int> stringIndices, Dictionary<TypeData, int> typeIndices)
+    {
+        // Kind (0x01 = Class, 0x02 = Interface)
+        writer.Write(type.Kind == "class" ? (byte)0x01 : (byte)0x02);
+
+        // Name and namespace indices
+        writer.Write(stringIndices[type.Name ?? ""]);
+        writer.Write(stringIndices[type.Namespace ?? ""]);
+
+        // Access (default to public)
+        writer.Write((byte)0x01);
+
+        // Flags
+        byte flags = 0;
+        if (type.IsAbstract) flags |= 0x01;
+        if (type.IsSealed) flags |= 0x02;
+        writer.Write(flags);
+
+        // Base type index (0xFFFFFFFF for none)
+        writer.Write(0xFFFFFFFFu);
+
+        // Interface count (0 for now)
+        writer.Write(0);
+
+        // Field count and fields
+        var fields = type.Fields ?? Array.Empty<FieldData>();
+        writer.Write(fields.Length);
+        foreach (var field in fields)
+        {
+            writer.Write(stringIndices[field.Name ?? ""]);
+            writer.Write(0u); // type index (placeholder)
+            writer.Write((byte)0x01); // access
+            writer.Write((byte)0); // flags
+        }
+
+        // Method count and methods
+        var methods = type.Methods ?? Array.Empty<MethodData>();
+        writer.Write(methods.Length);
+        foreach (var method in methods)
+        {
+            WriteMethodDefinition(writer, method, stringIndices);
+        }
+    }
+
+    private void WriteMethodDefinition(BinaryWriter writer, MethodData method, Dictionary<string, int> stringIndices)
+    {
+        writer.Write(stringIndices[method.Name ?? ""]);
+        writer.Write(0u); // return type index (placeholder)
+        writer.Write((byte)0x01); // access
+        writer.Write((byte)0); // flags
+
+        // Parameters
+        var parameters = method.Parameters ?? Array.Empty<ParameterData>();
+        writer.Write(parameters.Length);
+        foreach (var param in parameters)
+        {
+            writer.Write(stringIndices[param.Name ?? ""]);
+            writer.Write(0u); // type index (placeholder)
+        }
+
+        // Locals (empty for now)
+        writer.Write(0);
+
+        // Instructions (store offset and count)
+        var instructionCount = method.InstructionCount;
+        writer.Write(instructionCount);
+        for (int i = 0; i < instructionCount; i++)
+        {
+            writer.Write(0u); // instruction offset (placeholder)
+        }
+    }
+
+    private void WriteCodeSection(BinaryWriter writer, ModuleData moduleData)
+    {
+        // Section header
+        WriteSectionHeader(writer, ".code", 0);
+
+        long sectionStart = writer.BaseStream.Position;
+
+        // Collect all instructions from methods and functions
+        var allInstructions = new List<Instruction>();
+        CollectAllInstructions(moduleData, allInstructions);
+
+        // Instruction count
+        writer.Write(allInstructions.Count);
+
+        // Serialize instructions
+        foreach (var instruction in allInstructions)
+        {
+            WriteInstruction(writer, instruction);
+        }
+
+        // Update section size
+        long sectionEnd = writer.BaseStream.Position;
+        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+    }
+
+    private void CollectAllInstructions(ModuleData moduleData, List<Instruction> instructions)
+    {
+        // Collect from types
+        foreach (var type in moduleData.Types ?? Array.Empty<TypeData>())
+        {
+            foreach (var method in type.Methods ?? Array.Empty<MethodData>())
+            {
+                if (method.Instructions != null)
+                {
+                    var methodInstructions = DeserializeInstructions(method.Instructions);
+                    instructions.AddRange(methodInstructions);
+                }
+            }
+        }
+
+        // Collect from functions
+        foreach (var function in moduleData.Functions ?? Array.Empty<FunctionData>())
+        {
+            if (function.Instructions != null)
+            {
+                var functionInstructions = DeserializeInstructions(function.Instructions);
+                instructions.AddRange(functionInstructions);
+            }
+        }
+    }
+
+    private List<Instruction> DeserializeInstructions(JsonNode instructionsNode)
+    {
+        // This is a simplified deserialization - in practice you'd need full instruction deserialization
+        // For now, return empty list as placeholder
+        return new List<Instruction>();
+    }
+
+    private void WriteInstruction(BinaryWriter writer, Instruction instruction)
+    {
+        // Write opcode (simplified - need proper opcode mapping)
+        writer.Write((byte)MapOpCodeToByte(instruction.OpCode));
+
+        // Write operand count (simplified)
+        writer.Write((byte)GetOperandCount(instruction));
+
+        // Write operands (simplified)
+        WriteOperands(writer, instruction);
+    }
+
+    private byte MapOpCodeToByte(OpCode opCode)
+    {
+        // Simplified mapping - need proper implementation
+        return opCode switch
+        {
+            OpCode.Ldarg => 0x01,
+            OpCode.Ldloc => 0x02,
+            OpCode.Ldfld => 0x03,
+            OpCode.Ldsfld => 0x04,
+            OpCode.LdcI4 => 0x05,
+            OpCode.LdcI8 => 0x06,
+            OpCode.LdcR4 => 0x07,
+            OpCode.LdcR8 => 0x08,
+            OpCode.Ldstr => 0x09,
+            OpCode.Ldnull => 0x0A,
+            OpCode.Starg => 0x0B,
+            OpCode.Stloc => 0x0C,
+            OpCode.Stfld => 0x0D,
+            OpCode.Stsfld => 0x0E,
+            OpCode.Add => 0x0F,
+            OpCode.Sub => 0x10,
+            OpCode.Mul => 0x11,
+            OpCode.Div => 0x12,
+            OpCode.Rem => 0x13,
+            OpCode.Ceq => 0x14,
+            OpCode.Cgt => 0x15,
+            OpCode.Clt => 0x16,
+            OpCode.Call => 0x17,
+            OpCode.Callvirt => 0x18,
+            OpCode.Newobj => 0x19,
+            OpCode.Newarr => 0x1A,
+            OpCode.Ret => 0x1B,
+            OpCode.Dup => 0x1C,
+            OpCode.Pop => 0x1D,
+            _ => 0x00 // Unknown
+        };
+    }
+
+    private byte GetOperandCount(Instruction instruction)
+    {
+        // Simplified - need proper implementation based on instruction type
+        return instruction switch
+        {
+            LoadArgInstruction => 1,
+            LoadLocalInstruction => 1,
+            LoadConstantInstruction => 1,
+            LoadNullInstruction => 0,
+            StoreArgInstruction => 1,
+            StoreLocalInstruction => 1,
+            ArithmeticInstruction => 0,
+            ComparisonInstruction => 0,
+            ReturnInstruction => 0,
+            DupInstruction => 0,
+            PopInstruction => 0,
+            _ => 0
+        };
+    }
+
+    private void WriteOperands(BinaryWriter writer, Instruction instruction)
+    {
+        // Simplified operand writing - need proper implementation
+        switch (instruction)
+        {
+            case LoadArgInstruction lai:
+                writer.Write((byte)0x01); // String index type
+                writer.Write(0u); // Placeholder string index
+                break;
+            case LoadLocalInstruction lli:
+                writer.Write((byte)0x01); // String index type
+                writer.Write(0u); // Placeholder string index
+                break;
+            case LoadConstantInstruction lci:
+                WriteConstantOperand(writer, lci.Value, lci.Type);
+                break;
+            // Add other cases as needed
+        }
+    }
+
+    private void WriteConstantOperand(BinaryWriter writer, object value, TypeReference type)
+    {
+        if (type == TypeReference.String)
+        {
+            writer.Write((byte)0x01); // String index type
+            writer.Write(0u); // Placeholder string index
+        }
+        else if (type == TypeReference.Int32)
+        {
+            writer.Write((byte)0x02); // Integer type
+            writer.Write((int)value);
+        }
+        else if (type == TypeReference.Int64)
+        {
+            writer.Write((byte)0x02); // Integer type
+            writer.Write((long)value);
+        }
+        else if (type == TypeReference.Float32)
+        {
+            writer.Write((byte)0x03); // Double type
+            writer.Write((double)(float)value);
+        }
+        else if (type == TypeReference.Float64)
+        {
+            writer.Write((byte)0x03); // Double type
+            writer.Write((double)value);
+        }
+        else if (type == TypeReference.Bool)
+        {
+            writer.Write((byte)0x06); // Bool type
+            writer.Write((bool)value);
+        }
+    }
+
+    private void WriteConstantsSection(BinaryWriter writer, ModuleData moduleData)
+    {
+        // Section header
+        WriteSectionHeader(writer, ".constants", 0);
+
+        long sectionStart = writer.BaseStream.Position;
+
+        // Collect all constants from instructions
+        var constants = new List<ConstantData>();
+        CollectConstants(moduleData, constants);
+
+        // Constant count
+        writer.Write(constants.Count);
+
+        // Serialize constants
+        foreach (var constant in constants)
+        {
+            WriteConstant(writer, constant);
+        }
+
+        // Update section size
+        long sectionEnd = writer.BaseStream.Position;
+        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+    }
+
+    private void CollectConstants(ModuleData moduleData, List<ConstantData> constants)
+    {
+        // Collect from types
+        foreach (var type in moduleData.Types ?? Array.Empty<TypeData>())
+        {
+            foreach (var method in type.Methods ?? Array.Empty<MethodData>())
+            {
+                if (method.Instructions != null)
+                {
+                    CollectConstantsFromInstructions(method.Instructions, constants);
+                }
+            }
+        }
+
+        // Collect from functions
+        foreach (var function in moduleData.Functions ?? Array.Empty<FunctionData>())
+        {
+            if (function.Instructions != null)
+            {
+                CollectConstantsFromInstructions(function.Instructions, constants);
+            }
+        }
+    }
+
+    private void CollectConstantsFromInstructions(JsonNode instructionsNode, List<ConstantData> constants)
+    {
+        if (instructionsNode is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                if (item is JsonObject obj)
+                {
+                    var opCode = obj["opCode"]?.GetValue<string>();
+                    if (opCode == "ldc" && obj["operand"] is JsonObject operand)
+                    {
+                        var value = operand["value"]?.GetValue<string>();
+                        var type = operand["type"]?.GetValue<string>();
+                        if (value != null && type != null)
+                        {
+                            constants.Add(new ConstantData
+                            {
+                                Value = value,
+                                Type = type
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void WriteConstant(BinaryWriter writer, ConstantData constant)
+    {
+        // Write type
+        var typeByte = constant.Type switch
+        {
+            "System.String" or "string" => (byte)0x05, // String
+            "System.Int32" or "int32" => (byte)0x01, // Int32
+            "System.Int64" or "int64" => (byte)0x01, // Int32 (simplified)
+            "System.Single" or "float32" => (byte)0x03, // Float
+            "System.Double" or "float64" => (byte)0x04, // Double
+            "System.Boolean" or "bool" => (byte)0x06, // Bool
+            _ => (byte)0x07 // Null
+        };
+        writer.Write(typeByte);
+
+        // Write value based on type
+        switch (typeByte)
+        {
+            case 0x01: // Int32
+                if (int.TryParse(constant.Value, out var intValue))
+                    writer.Write(intValue);
+                else
+                    writer.Write(0);
+                break;
+            case 0x03: // Float
+                if (float.TryParse(constant.Value, out var floatValue))
+                    writer.Write(floatValue);
+                else
+                    writer.Write(0.0f);
+                break;
+            case 0x04: // Double
+                if (double.TryParse(constant.Value, out var doubleValue))
+                    writer.Write(doubleValue);
+                else
+                    writer.Write(0.0);
+                break;
+            case 0x05: // String
+                var bytes = Encoding.UTF8.GetBytes(constant.Value);
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+                break;
+            case 0x06: // Bool
+                if (bool.TryParse(constant.Value, out var boolValue))
+                    writer.Write(boolValue);
+                else
+                    writer.Write(false);
+                break;
+            case 0x07: // Null
+                // No value to write
+                break;
+        }
+    }
+
+    private sealed class ConstantData
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+    }
+
+    private void WriteSectionHeader(BinaryWriter writer, string name, uint size)
+    {
+        // Section name (null-terminated)
+        writer.Write(Encoding.UTF8.GetBytes(name));
+        writer.Write((byte)0);
+
+        // Size
+        writer.Write(size);
+    }
+
+    private void UpdateSectionSize(BinaryWriter writer, long sizePos, uint size)
+    {
+        long currentPos = writer.BaseStream.Position;
+        writer.BaseStream.Position = sizePos;
+        writer.Write(size);
+        writer.BaseStream.Position = currentPos;
+    }
+
+    private List<string> BuildStringTable(ModuleData moduleData)
+    {
+        var strings = new HashSet<string>();
+
+        // Add module name
+        if (!string.IsNullOrEmpty(moduleData.Name))
+            strings.Add(moduleData.Name);
+
+        // Add type names and namespaces
+        foreach (var type in moduleData.Types ?? Array.Empty<TypeData>())
+        {
+            if (!string.IsNullOrEmpty(type.Name)) strings.Add(type.Name);
+            if (!string.IsNullOrEmpty(type.Namespace)) strings.Add(type.Namespace);
+
+            // Add field names
+            foreach (var field in type.Fields ?? Array.Empty<FieldData>())
+            {
+                if (!string.IsNullOrEmpty(field.Name)) strings.Add(field.Name);
+            }
+
+            // Add method names and parameters
+            foreach (var method in type.Methods ?? Array.Empty<MethodData>())
+            {
+                if (!string.IsNullOrEmpty(method.Name)) strings.Add(method.Name);
+
+                foreach (var param in method.Parameters ?? Array.Empty<ParameterData>())
+                {
+                    if (!string.IsNullOrEmpty(param.Name)) strings.Add(param.Name);
+                }
+            }
+        }
+
+        return strings.ToList();
+    }
+
+    /// <summary>
     /// Dumps the module as BSON (binary JSON) for smaller file sizes
     /// </summary>
     public byte[] DumpToBson()

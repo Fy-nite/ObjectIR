@@ -16,6 +16,7 @@ FetchContent_MakeAvailable(json)
 add_library(objectir_runtime SHARED
     src/objectir_runtime.cpp
     src/ir_loader.cpp
+    src/fob_loader.cpp
     src/instruction_executor.cpp
     src/stdlib.cpp
     src/runtime_c_api.cpp
@@ -47,6 +48,12 @@ target_link_libraries(todoapp_example PRIVATE objectir_runtime)
 
 add_executable(pipeline_example examples/pipeline_example.cpp)
 target_link_libraries(pipeline_example PRIVATE objectir_runtime)
+
+add_executable(fob_test examples/fob_test.cpp)
+target_link_libraries(fob_test PRIVATE objectir_runtime)
+
+add_executable(format_test examples/format_test.cpp)
+target_link_libraries(format_test PRIVATE objectir_runtime)
 
 # Install configuration
 install(TARGETS objectir_runtime

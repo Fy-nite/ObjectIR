@@ -7,12 +7,12 @@ Get up and running with the ObjectIR runtime pipeline in 5 minutes!
 The ObjectIR pipeline allows you to:
 
 1. **Build** an IR module using the C# API
-2. **Serialize** it to JSON format  
-3. **Load** the JSON in C++ at runtime
+2. **Serialize** it to FOB (Finite Open Bytecode) or JSON format  
+3. **Load** the file in C++ at runtime (auto-detects format)
 4. **Execute** methods with native implementations
 
 ```
-C# Builder API → JSON File → C++ Loader → Execute
+C# Builder API → FOB/JSON File → C++ Loader → Execute
 ```
 
 ## Quick Example
@@ -31,7 +31,8 @@ var module = builder
     .EndClass()
     .Build();
 
-// Save to JSON
+// Save to FOB (recommended) or JSON
+System.IO.File.WriteAllBytes("calc.fob", module.DumpFOB());
 System.IO.File.WriteAllText("calc.json", module.DumpJson());
 ```
 
@@ -40,8 +41,8 @@ System.IO.File.WriteAllText("calc.json", module.DumpJson());
 ```cpp
 #include "ir_loader.hpp"
 
-// Load the JSON module
-auto vm = ObjectIR::IRLoader::LoadFromFile("calc.json");
+// Load the FOB or JSON module (auto-detected)
+auto vm = ObjectIR::IRLoader::LoadFromFile("calc.fob");
 
 // Get the class and create an instance
 auto calcClass = vm->GetClass("MyCalc");

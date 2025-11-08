@@ -73,7 +73,7 @@ class Program
                     if (args.Length < 2)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine("Error: 'run' command requires a module JSON file.");
+                        Console.Error.WriteLine("Error: 'run' command requires a module file (.json or .fob).");
                         Console.ResetColor();
                         ShowUsage();
                         return;
@@ -216,30 +216,105 @@ class Program
     /// <summary>
     /// Run a compiled module directly in the C++ runtime
     /// </summary>
-    static void RunModuleInCppRuntime(string moduleJsonPath, IReadOnlyList<string>? invocationArgs = null)
+    static void RunModuleInCppRuntime(string modulePath, IReadOnlyList<string>? invocationArgs = null)
     {
-        Log($"[ObjectIR] Loading module from: {moduleJsonPath}");
+        Log($"[ObjectIR] Loading module from: {modulePath}");
 
-        if (!File.Exists(moduleJsonPath))
-            throw new FileNotFoundException($"Module file not found: {moduleJsonPath}");
+        if (!File.Exists(modulePath))
+            throw new FileNotFoundException($"Module file not found: {modulePath}");
 
-        string jsonContent = File.ReadAllText(moduleJsonPath);
-        Module module = ModuleSerializer.LoadFromJson(jsonContent);
+        // Check if this is a FOB file
+        if (IsFOBFile(modulePath))
+        {
+            ExecuteFOBModule(modulePath, invocationArgs ?? Array.Empty<string>());
+        }
+        else
+        {
+            // Assume JSON format
+            string jsonContent = File.ReadAllText(modulePath);
+            Module module = ModuleSerializer.LoadFromJson(jsonContent);
+            ExecuteModule(module, jsonContent, invocationArgs ?? Array.Empty<string>());
+        }
+    }
 
-        ExecuteModule(module, jsonContent, invocationArgs ?? Array.Empty<string>());
+    /// <summary>
+    /// Check if a file is in FOB format by reading the first 3 bytes
+    /// </summary>
+    static bool IsFOBFile(string filePath)
+    {
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            if (stream.Length < 3) return false;
+            
+            byte[] magic = new byte[3];
+            int bytesRead = stream.Read(magic, 0, 3);
+            if (bytesRead < 3) return false;
+            
+            return magic[0] == 'F' && magic[1] == 'O' && magic[2] == 'B';
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Execute a FOB module directly in the C++ runtime
+    /// </summary>
+    static void ExecuteFOBModule(string fobPath, IReadOnlyList<string> invocationArgs)
+    {
+        Log($"[ObjectIR-CSharp] Reading FOB module: {fobPath}");
+        Log($"[ObjectIR-CSharp] Initializing C++ runtime...");
+        using var runtime = new RuntimeWrapper();
+        Log($"[ObjectIR-CSharp] Loading FOB module into C++ runtime");
+        
+        try
+        {
+            runtime.LoadModuleFromFile(fobPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to load FOB module: {ex.Message}");
+            PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Failed");
+            throw;
+        }
+        
+        Log($"[ObjectIR-CSharp] FOB module loaded successfully");
+
+        // For FOB modules, we don't have metadata about entry points
+        // Try to find and invoke a Main method if it exists
+        try
+        {
+            // Try to invoke a static Main method (pass null for instance)
+            runtime.InvokeMethod("Program", "Main", null);
+            Log($"[ObjectIR-CSharp] Executed Main method successfully");
+            PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Completed");
+        }
+        catch (Exception ex)
+        {
+            Log($"[ObjectIR-CSharp] Could not find or execute Main method: {ex.Message}");
+            Console.WriteLine("[ObjectIR] FOB module loaded but no executable entry point found.");
+            PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Loaded");
+        }
     }
 
     /// <summary>
     /// Compile a module to C# code
     /// </summary>
-    static void CompileModuleToCSharp(string moduleJsonPath)
+    static void CompileModuleToCSharp(string modulePath)
     {
-        Log($"[ObjectIR] Compiling module to C# from: {moduleJsonPath}");
+        Log($"[ObjectIR] Compiling module to C# from: {modulePath}");
 
-        if (!File.Exists(moduleJsonPath))
-            throw new FileNotFoundException($"Module file not found: {moduleJsonPath}");
+        if (!File.Exists(modulePath))
+            throw new FileNotFoundException($"Module file not found: {modulePath}");
 
-        string json = File.ReadAllText(moduleJsonPath);
+        if (IsFOBFile(modulePath))
+        {
+            throw new InvalidOperationException("Cannot compile FOB files to C#. FOB files are already compiled binary modules.");
+        }
+
+        string json = File.ReadAllText(modulePath);
         Module module = ModuleSerializer.LoadFromJson(json);
 
         CSharpCodeGenerator generator = new CSharpCodeGenerator();
@@ -692,7 +767,7 @@ class Program
         {System.Reflection.Assembly.GetExecutingAssembly().GetName().Name} <command> [options]
 
     Commands:
-        run <module.json> [args...]     Execute module entry point in C++ runtime
+        run <module> [args...]          Execute module entry point in C++ runtime (.json or .fob)
         compile <module.json>           Compile module to C# code
         build <example>                 Build example to JSON file
         build-and-run <example>         Build example and execute in C++ runtime

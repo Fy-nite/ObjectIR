@@ -38,6 +38,12 @@ public static class ModuleSerializationExtensions
         => module.Serialize().DumpToBson();
 
     /// <summary>
+    /// Dumps the module as FOB (Finite Open Bytecode) binary format
+    /// </summary>
+    public static byte[] DumpFob(this Module module)
+        => module.Serialize().DumpToFOB();
+
+    /// <summary>
  /// Dumps the module to an array of type descriptions
     /// </summary>
     public static TypeData[] DumpTypes(this Module module)

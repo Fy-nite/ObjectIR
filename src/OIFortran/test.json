@@ -1,0 +1,205 @@
+{
+  "Name": "test",
+  "Version": "1.0.0",
+  "Metadata": {},
+  "Types": [
+    {
+      "Kind": "Class",
+      "Name": "test",
+      "Namespace": "test",
+      "Access": "Public",
+      "IsAbstract": false,
+      "IsSealed": false,
+      "Interfaces": [],
+      "BaseInterfaces": [],
+      "GenericParameters": [],
+      "Fields": [],
+      "Methods": [
+        {
+          "Name": "Main",
+          "ReturnType": "void",
+          "Access": "Public",
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsOverride": false,
+          "IsAbstract": false,
+          "IsConstructor": false,
+          "Parameters": [],
+          "LocalVariables": [
+            {
+              "Name": "x",
+              "Type": "int32"
+            },
+            {
+              "Name": "y",
+              "Type": "int32"
+            },
+            {
+              "Name": "result",
+              "Type": "int32"
+            },
+            {
+              "Name": "__print_buffer",
+              "Type": "System.string"
+            },
+            {
+              "Name": "__print_temp",
+              "Type": "System.string"
+            }
+          ],
+          "InstructionCount": 20,
+          "Instructions": [
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "x"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "y"
+              }
+            },
+            {
+              "opCode": "add"
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Result:",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": " ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Convert",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "int32"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "__print_temp"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "__print_temp"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "__print_buffer"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        }
+      ],
+      "Properties": []
+    }
+  ],
+  "Functions": []
+}

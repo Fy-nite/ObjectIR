@@ -45,6 +45,12 @@ public sealed class FortranLanguageCompiler
         return module.DumpJson();
     }
 
+    public byte[] CompileSourceToFob(string source)
+    {
+        var module = CompileSource(source);
+        return module.DumpFob();
+    }
+
     public string CompileSourceToText(string source)
     {
         var module = CompileSource(source);

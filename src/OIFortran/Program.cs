@@ -128,24 +128,41 @@ var compiler = new FortranLanguageCompiler(options);
 
 try
 {
-	string output = format switch
+	string? output = format switch
 	{
 		"text" => compiler.CompileSourceToText(source),
 		"json" => compiler.CompileSourceToJson(source),
 		"oir" => compiler.CompileSourceToOirText(source),
 		"yaml" => compiler.CompileSourceToYaml(source),
 		"markdown" => compiler.CompileSourceToMarkdown(source),
-
+		"fob" => null, // FOB is handled separately as binary
 		_ => throw new InvalidOperationException($"Unsupported format: {format}")
 	};
 
 	if (outputPath == null)
 	{
-		Console.WriteLine(output);
+		if (format == "fob")
+		{
+			var fobData = compiler.CompileSourceToFob(source);
+			using var stdout = Console.OpenStandardOutput();
+			stdout.Write(fobData, 0, fobData.Length);
+		}
+		else
+		{
+			Console.WriteLine(output);
+		}
 	}
 	else
 	{
-		File.WriteAllText(outputPath, output);
+		if (format == "fob")
+		{
+			var fobData = compiler.CompileSourceToFob(source);
+			File.WriteAllBytes(outputPath, fobData);
+		}
+		else
+		{
+			File.WriteAllText(outputPath, output);
+		}
 	}
 }
 catch (Exception ex)
@@ -155,5 +172,5 @@ catch (Exception ex)
 
 static void PrintUsage()
 {
-	Console.WriteLine("Usage: objectir-fortran <input-file> [--out <path>] [--format text|json] [--intrinsics <config.json>]");
+	Console.WriteLine("Usage: objectir-fortran <input-file> [--out <path>] [--format text|json|fob|oir|yaml|markdown] [--intrinsics <config.json>]");
 }

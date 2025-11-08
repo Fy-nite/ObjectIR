@@ -205,7 +205,7 @@ See [GRAMMAR.md](docs/GRAMMAR.md) for the complete formal specification.
 - [ ] Core IR implementation ✓ (Done)
 - [ ] Builder API ✓ (Done)
 - [ ] Text format parser
-- [ ] Binary format (for performance) ✓ (BSON format implemented - [see docs](docs/BSON_SERIALIZATION.md))
+- [ ] Binary format (for performance) ✓ (FOB format implemented - [see docs](docs/OBJECTIR_FOB_SPEC.md))
 - [ ] C# backend (CIL emission)
 - [ ] JavaScript backend
 - [ ] C++ backend
