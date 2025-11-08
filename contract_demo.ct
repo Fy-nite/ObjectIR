@@ -1,0 +1,1 @@
+Contract Demo { fn main() { IO.println("Hello Contract IR"); var x = 1 + 2; IO.println("Done"); } }

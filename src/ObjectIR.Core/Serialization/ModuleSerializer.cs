@@ -85,6 +85,33 @@ public sealed class ModuleSerializer
   }
 
     /// <summary>
+    /// Dumps the module as IR code (similar to assembly language)
+    /// </summary>
+    public string DumpToIRCode()
+    {
+        var sb = new StringBuilder();
+
+        // Module header
+        sb.AppendLine($"module {_module.Name} version {_module.Version}");
+
+        // Types
+        foreach (var type in _module.Types)
+        {
+            DumpTypeAsIRCode(sb, type);
+            sb.AppendLine();
+        }
+
+        // Functions
+        foreach (var func in _module.Functions)
+        {
+            DumpFunctionAsIRCode(sb, func);
+            sb.AppendLine();
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>
     /// Dumps the module to an array of type descriptions
     /// </summary>
     public TypeData[] DumpTypes() => _module.Types.Select(t => DumpTypeData(t)).ToArray();
@@ -609,6 +636,284 @@ Name = property.Name,
     {
         var serializer = new ModuleSerializer(module);
         return serializer.DumpToBson();
+    }
+
+    // ============================================================================
+    // IR Code Dumping Methods
+    // ============================================================================
+
+    private void DumpTypeAsIRCode(StringBuilder sb, TypeDefinition type)
+    {
+        if (type is InterfaceDefinition interfaceDef)
+        {
+            DumpInterfaceAsIRCode(sb, interfaceDef);
+        }
+        else if (type is ClassDefinition classDef)
+        {
+            DumpClassAsIRCode(sb, classDef);
+        }
+    }
+
+    private void DumpInterfaceAsIRCode(StringBuilder sb, InterfaceDefinition interfaceDef)
+    {
+        sb.AppendLine($"// {interfaceDef.Name} interface");
+        sb.AppendLine($"interface {interfaceDef.Name} {{");
+
+        foreach (var method in interfaceDef.Methods)
+        {
+            var returnType = method.ReturnType.GetQualifiedName();
+            var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {p.Type.GetQualifiedName()}"));
+            sb.AppendLine($"    method {method.Name}({parameters}) -> {returnType}");
+        }
+
+        sb.AppendLine("}");
+    }
+
+    private void DumpClassAsIRCode(StringBuilder sb, ClassDefinition classDef)
+    {
+        sb.AppendLine($"// {classDef.Name} class");
+        var inheritance = new List<string>();
+        if (classDef.BaseType != null)
+        {
+            inheritance.Add(classDef.BaseType.GetQualifiedName());
+        }
+        inheritance.AddRange(classDef.Interfaces.Select(i => i.GetQualifiedName()));
+
+        var inheritanceStr = inheritance.Count > 0 ? $" : {string.Join(", ", inheritance)}" : "";
+        sb.AppendLine($"class {classDef.Name}{inheritanceStr} {{");
+
+        // Fields
+        foreach (var field in classDef.Fields)
+        {
+            var access = field.Access.ToString().ToLower();
+            sb.AppendLine($"    {access} field {field.Name}: {field.Type.GetQualifiedName()}");
+        }
+
+        if (classDef.Fields.Count > 0 && classDef.Methods.Count > 0)
+        {
+            sb.AppendLine();
+        }
+
+        // Methods
+        foreach (var method in classDef.Methods)
+        {
+            DumpMethodAsIRCode(sb, method, classDef);
+            if (method != classDef.Methods.Last())
+            {
+                sb.AppendLine();
+            }
+        }
+
+        sb.AppendLine("}");
+    }
+
+    private void DumpMethodAsIRCode(StringBuilder sb, MethodDefinition method, ClassDefinition declaringClass)
+    {
+        var methodName = method.IsConstructor ? "constructor" : "method";
+        var returnType = method.ReturnType.GetQualifiedName();
+        var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {p.Type.GetQualifiedName()}"));
+
+        var implements = "";
+        if (method.ImplementsInterface != null)
+        {
+            implements = $" implements {method.ImplementsInterface.DeclaringType.GetQualifiedName()}.{method.ImplementsInterface.Name}";
+        }
+
+        sb.AppendLine($"    {methodName} {method.Name}({parameters}) -> {returnType}{implements} {{");
+
+        // Locals
+        foreach (var local in method.Locals)
+        {
+            sb.AppendLine($"        local {local.Name}: {local.Type.GetQualifiedName()}");
+        }
+
+        if (method.Locals.Count > 0 && method.Instructions.Count > 0)
+        {
+            sb.AppendLine();
+        }
+
+        // Instructions
+        foreach (var instruction in method.Instructions)
+        {
+            sb.AppendLine($"        {DumpInstructionAsIRCode(instruction)}");
+        }
+
+        sb.AppendLine("    }");
+    }
+
+    private void DumpFunctionAsIRCode(StringBuilder sb, FunctionDefinition func)
+    {
+        var returnType = func.ReturnType.GetQualifiedName();
+        var parameters = string.Join(", ", func.Parameters.Select(p => $"{p.Name}: {p.Type.GetQualifiedName()}"));
+
+        sb.AppendLine($"// {func.Name} function");
+        sb.AppendLine($"function {func.Name}({parameters}) -> {returnType} {{");
+
+        // Locals
+        foreach (var local in func.Locals)
+        {
+            sb.AppendLine($"    local {local.Name}: {local.Type.GetQualifiedName()}");
+        }
+
+        if (func.Locals.Count > 0 && func.Instructions.Count > 0)
+        {
+            sb.AppendLine();
+        }
+
+        // Instructions
+        foreach (var instruction in func.Instructions)
+        {
+            sb.AppendLine($"    {DumpInstructionAsIRCode(instruction)}");
+        }
+
+        sb.AppendLine("}");
+    }
+
+    private string DumpInstructionAsIRCode(Instruction instruction)
+    {
+        // This is a simplified version - in practice, you'd need to handle all instruction types
+        // For now, we'll use the OpCode name and basic operand formatting
+        var opCode = instruction.OpCode.ToString().ToLower();
+
+        // Handle some common instructions with special formatting
+        switch (instruction.OpCode)
+        {
+            case OpCode.Ldarg:
+                if (instruction is LoadArgInstruction loadArg)
+                {
+                    return loadArg.ArgumentName == "this" ? "ldarg this" : $"ldarg {loadArg.ArgumentName}";
+                }
+                break;
+
+            case OpCode.Ldloc:
+                if (instruction is LoadLocalInstruction loadLocal)
+                {
+                    return $"ldloc {loadLocal.LocalName}";
+                }
+                break;
+
+            case OpCode.Stloc:
+                if (instruction is StoreLocalInstruction storeLocal)
+                {
+                    return $"stloc {storeLocal.LocalName}";
+                }
+                break;
+
+            case OpCode.Ldfld:
+                if (instruction is LoadFieldInstruction loadField)
+                {
+                    return $"ldfld {loadField.Field.DeclaringType.GetQualifiedName()}.{loadField.Field.Name}";
+                }
+                break;
+
+            case OpCode.Stfld:
+                if (instruction is StoreFieldInstruction storeField)
+                {
+                    return $"stfld {storeField.Field.DeclaringType.GetQualifiedName()}.{storeField.Field.Name}";
+                }
+                break;
+
+            case OpCode.LdcI4:
+            case OpCode.LdcI8:
+            case OpCode.LdcR4:
+            case OpCode.LdcR8:
+            case OpCode.Ldstr:
+                if (instruction is LoadConstantInstruction loadConst)
+                {
+                    if (loadConst.Value is string str)
+                        return $"ldstr \"{str}\"";
+                    else if (loadConst.Value is int i32)
+                        return $"ldc.i4 {i32}";
+                    else if (loadConst.Value is long i64)
+                        return $"ldc.i8 {i64}";
+                    else if (loadConst.Value is float f32)
+                        return $"ldc.r4 {f32}";
+                    else if (loadConst.Value is double f64)
+                        return $"ldc.r8 {f64}";
+                    else if (loadConst.Value is bool b)
+                        return $"ldc.i4 {(b ? 1 : 0)}  // {b}";
+                }
+                break;
+
+            case OpCode.Ldnull:
+                return "ldnull";
+
+            case OpCode.Call:
+                if (instruction is CallInstruction call)
+                {
+                    var methodRef = call.Method;
+                    var args = string.Join(", ", methodRef.ParameterTypes.Select(t => t.GetQualifiedName()));
+                    return $"call {methodRef.DeclaringType.GetQualifiedName()}.{methodRef.Name}({args}) -> {methodRef.ReturnType.GetQualifiedName()}";
+                }
+                break;
+
+            case OpCode.Callvirt:
+                if (instruction is CallVirtualInstruction callVirt)
+                {
+                    var methodRef = callVirt.Method;
+                    var args = string.Join(", ", methodRef.ParameterTypes.Select(t => t.GetQualifiedName()));
+                    return $"callvirt {methodRef.DeclaringType.GetQualifiedName()}.{methodRef.Name}({args}) -> {methodRef.ReturnType.GetQualifiedName()}";
+                }
+                break;
+
+            case OpCode.Newobj:
+                if (instruction is NewObjectInstruction newObj)
+                {
+                    // For constructors, we need to find the constructor method
+                    // This is simplified - in practice you'd need to look up the constructor
+                    return $"newobj {newObj.Type.GetQualifiedName()}.constructor(/* params */)";
+                }
+                break;
+
+            case OpCode.Ret:
+                return "ret";
+
+            case OpCode.Dup:
+                return "dup";
+
+            case OpCode.Pop:
+                return "pop";
+
+            case OpCode.Add:
+                return "add";
+
+            case OpCode.Sub:
+                return "sub";
+
+            case OpCode.Mul:
+                return "mul";
+
+            case OpCode.Div:
+                return "div";
+
+            case OpCode.Rem:
+                return "rem";
+
+            case OpCode.Neg:
+                return "neg";
+
+            case OpCode.Ceq:
+                return "ceq";
+
+            case OpCode.Cgt:
+                return "cgt";
+
+            case OpCode.Clt:
+                return "clt";
+
+            case OpCode.Br:
+                // Branch instructions would need target labels
+                return "br /* target */";
+
+            case OpCode.Brtrue:
+                return "brtrue /* target */";
+
+            case OpCode.Brfalse:
+                return "brfalse /* target */";
+        }
+
+        // Fallback for unhandled instructions
+        return $"{opCode}  // TODO: Implement proper formatting";
     }
 }
 

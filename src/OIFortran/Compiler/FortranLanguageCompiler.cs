@@ -54,7 +54,8 @@ public sealed class FortranLanguageCompiler
     internal string CompileSourceToOirText(string source)
     {
         var module = CompileSource(source);
-        return module.DumpText();
+        var serializer = new ModuleSerializer(module);
+        return serializer.DumpToIRCode();
     }
     public string CompileSourceToMarkdown(string source)
     {

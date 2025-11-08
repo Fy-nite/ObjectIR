@@ -9,6 +9,10 @@ namespace ObjectIR {
 // TypeReference Implementation
 // ============================================================================
 
+TypeReference::TypeReference(const TypeReference& other)
+    : _isPrimitive(other._isPrimitive), _primitiveType(other._primitiveType), 
+      _classType(other._classType), _elementType(other._elementType ? std::make_shared<TypeReference>(*other._elementType) : nullptr) {}
+
 TypeReference::TypeReference(PrimitiveType primitive)
     : _isPrimitive(true), _primitiveType(primitive) {}
 
@@ -43,8 +47,16 @@ TypeReference TypeReference::String() {
     return TypeReference(PrimitiveType::String);
 }
 
+TypeReference TypeReference::UInt8() {
+    return TypeReference(PrimitiveType::UInt8);
+}
+
 TypeReference TypeReference::Object(ClassRef classType) {
     return TypeReference(classType);
+}
+
+TypeReference TypeReference::Object() {
+    return TypeReference(static_cast<ClassRef>(nullptr));
 }
 
 // ============================================================================
@@ -101,6 +113,22 @@ std::string Value::AsString() const {
 ObjectRef Value::AsObject() const {
     if (!IsObject()) throw std::runtime_error("Value is not object");
     return std::get<ObjectRef>(_value);
+}
+
+bool Value::operator==(const Value& other) const {
+    if (_value.index() != other._value.index()) return false;
+    
+    switch (_value.index()) {
+        case 0: return true; // both null
+        case 1: return std::get<int32_t>(_value) == std::get<int32_t>(other._value);
+        case 2: return std::get<int64_t>(_value) == std::get<int64_t>(other._value);
+        case 3: return std::get<float>(_value) == std::get<float>(other._value);
+        case 4: return std::get<double>(_value) == std::get<double>(other._value);
+        case 5: return std::get<bool>(_value) == std::get<bool>(other._value);
+        case 6: return std::get<std::string>(_value) == std::get<std::string>(other._value);
+        case 7: return std::get<ObjectRef>(_value) == std::get<ObjectRef>(other._value);
+        default: return false;
+    }
 }
 
 // ============================================================================
@@ -376,6 +404,10 @@ ObjectRef VirtualMachine::CreateObject(ClassRef classType) {
 
 ObjectRef VirtualMachine::CreateObject(const std::string& className) {
     return GetClass(className)->CreateInstance();
+}
+
+std::shared_ptr<Array> VirtualMachine::CreateArray(const TypeReference& elementType, int32_t length) {
+    return std::make_shared<Array>(elementType, length);
 }
 
 Value VirtualMachine::InvokeMethod(ObjectRef object, const std::string& methodName, const std::vector<Value>& args) {

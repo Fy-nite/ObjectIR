@@ -45,6 +45,7 @@ namespace ObjectIR
         Bool,
         Void,
         String,
+        UInt8,
         Object
     };
 
@@ -53,12 +54,15 @@ namespace ObjectIR
     {
     public:
         TypeReference() = default;
+        TypeReference(const TypeReference& other);
         explicit TypeReference(PrimitiveType primitive);
         explicit TypeReference(ClassRef classType);
 
         [[nodiscard]] bool IsPrimitive() const { return _isPrimitive; }
         [[nodiscard]] PrimitiveType GetPrimitiveType() const { return _primitiveType; }
         [[nodiscard]] ClassRef GetClassType() const { return _classType; }
+        [[nodiscard]] bool IsArray() const { return _elementType != nullptr; }
+        [[nodiscard]] TypeReference GetElementType() const { return *_elementType; }
 
         static TypeReference Int32();
         static TypeReference Int64();
@@ -67,12 +71,15 @@ namespace ObjectIR
         static TypeReference Bool();
         static TypeReference Void();
         static TypeReference String();
+        static TypeReference UInt8();
+        static TypeReference Object();
         static TypeReference Object(ClassRef classType);
 
     private:
         bool _isPrimitive = true;
         PrimitiveType _primitiveType = PrimitiveType::Void;
         ClassRef _classType = nullptr;
+        std::shared_ptr<TypeReference> _elementType;
     };
 
     // ============================================================================
@@ -109,9 +116,49 @@ namespace ObjectIR
         [[nodiscard]] std::string AsString() const;
         [[nodiscard]] ObjectRef AsObject() const;
 
+        bool operator==(const Value& other) const;
+        bool operator!=(const Value& other) const { return !(*this == other); }
+
     private:
         std::variant<std::nullptr_t, int32_t, int64_t, float, double, bool, std::string, ObjectRef> _value;
     };
+
+} // namespace ObjectIR
+
+// Hash function for Value to enable use in unordered_map/unordered_set
+namespace std {
+    template<>
+    struct hash<ObjectIR::Value> {
+        size_t operator()(const ObjectIR::Value& value) const {
+            if (value.IsNull()) return 0;
+            if (value.IsInt32()) return hash<int32_t>()(value.AsInt32());
+            if (value.IsInt64()) return hash<int64_t>()(value.AsInt64());
+            if (value.IsFloat32()) return hash<float>()(value.AsFloat32());
+            if (value.IsFloat64()) return hash<double>()(value.AsFloat64());
+            if (value.IsBool()) return hash<bool>()(value.AsBool());
+            if (value.IsString()) return hash<string>()(value.AsString());
+            if (value.IsObject()) return hash<uintptr_t>()(reinterpret_cast<uintptr_t>(value.AsObject().get()));
+            return 0; // fallback
+        }
+    };
+
+    template<>
+    struct equal_to<ObjectIR::Value> {
+        bool operator()(const ObjectIR::Value& lhs, const ObjectIR::Value& rhs) const {
+            if (lhs.IsNull() && rhs.IsNull()) return true;
+            if (lhs.IsInt32() && rhs.IsInt32()) return lhs.AsInt32() == rhs.AsInt32();
+            if (lhs.IsInt64() && rhs.IsInt64()) return lhs.AsInt64() == rhs.AsInt64();
+            if (lhs.IsFloat32() && rhs.IsFloat32()) return lhs.AsFloat32() == rhs.AsFloat32();
+            if (lhs.IsFloat64() && rhs.IsFloat64()) return lhs.AsFloat64() == rhs.AsFloat64();
+            if (lhs.IsBool() && rhs.IsBool()) return lhs.AsBool() == rhs.AsBool();
+            if (lhs.IsString() && rhs.IsString()) return lhs.AsString() == rhs.AsString();
+            if (lhs.IsObject() && rhs.IsObject()) return lhs.AsObject() == rhs.AsObject();
+            return false;
+        }
+    };
+}
+
+namespace ObjectIR {
 
     // ============================================================================
     // Object Model - Core OOP support
@@ -134,10 +181,51 @@ namespace ObjectIR
         [[nodiscard]] ObjectRef GetBaseInstance() const { return _baseInstance; }
         void SetBaseInstance(ObjectRef base) { _baseInstance = base; }
 
+        // Generic data storage for native implementations
+        template<typename T>
+        void SetData(std::shared_ptr<T> data) {
+            _data = std::static_pointer_cast<void>(data);
+        }
+
+        template<typename T>
+        std::shared_ptr<T> GetData() const {
+            return std::static_pointer_cast<T>(_data);
+        }
+
     protected:
         std::unordered_map<std::string, Value> _fieldValues;
         ClassRef _class;
         ObjectRef _baseInstance;
+        std::shared_ptr<void> _data;
+    };
+
+    /// Array class for runtime arrays
+    class Array : public Object
+    {
+    public:
+        Array(TypeReference elementType, int32_t length)
+            : _elementType(elementType), _length(length), _elements(length) {}
+
+        void SetElement(int32_t index, const Value& value) {
+            if (index >= 0 && index < _length) {
+                _elements[index] = value;
+            }
+        }
+
+        Value GetElement(int32_t index) const {
+            if (index >= 0 && index < _length) {
+                return _elements[index];
+            }
+            return Value(); // null
+        }
+
+        [[nodiscard]] int32_t GetArrayLength() const { return _length; }
+        [[nodiscard]] TypeReference GetElementType() const { return _elementType; }
+
+    private:
+        TypeReference _elementType;
+        int32_t _length;
+        std::vector<Value> _elements;
     };
 
     /// Represents a field definition within a class
@@ -383,6 +471,7 @@ namespace ObjectIR
         // Object creation
         [[nodiscard]] ObjectRef CreateObject(ClassRef classType);
         [[nodiscard]] ObjectRef CreateObject(const std::string &className);
+        [[nodiscard]] std::shared_ptr<Array> CreateArray(const TypeReference& elementType, int32_t length);
 
         // Method invocation
         Value InvokeMethod(ObjectRef object, const std::string &methodName, const std::vector<Value> &args);
