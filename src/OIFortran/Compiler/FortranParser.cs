@@ -40,109 +40,24 @@ internal sealed class FortranParser
         string name = Consume(FortranTokenKind.Identifier, "Expected program name").Text;
 
         var statements = new List<FortranStatement>();
-        while (!Check(FortranTokenKind.KeywordEnd) && 
-               !Check(FortranTokenKind.KeywordEndProgram) && 
+        while (!Check(FortranTokenKind.KeywordEnd) &&
+               !Check(FortranTokenKind.KeywordEndProgram) &&
                !IsAtEnd)
         {
             try
             {
-                if (Match(FortranTokenKind.KeywordImplicit))
+                var statement = TryParseExecutableStatement(allowReturn: false);
+                if (statement != null)
                 {
-                    Consume(FortranTokenKind.KeywordNone, "Expected 'none' after 'implicit'");
-                    statements.Add(new FortranImplicitNoneStatement());
+                    statements.Add(statement);
                     continue;
                 }
 
-                if (IsTypeSpecifier(Current.Kind))
-                {
-                    var declaration = TryParseLooseDeclaration();
-                    if (declaration != null)
-                    {
-                        statements.Add(declaration);
-                        continue;
-                    }
-
-                    // Fallback: if parsing failed, skip the tokens defensively
-                    Advance();
-                    continue;
-                }
-
-                if (Match(FortranTokenKind.KeywordAllocate))
-                {
-                    // Skip allocate statements
-                    // allocate(array(...))
-                    Consume(FortranTokenKind.LParen, "Expected '(' after allocate");
-                    int depth = 1;
-                    while (depth > 0 && !IsAtEnd)
-                    {
-                        if (Check(FortranTokenKind.LParen)) depth++;
-                        else if (Check(FortranTokenKind.RParen)) depth--;
-                        Advance();
-                    }
-                    continue;
-                }
-
-                if (Match(FortranTokenKind.KeywordDeallocate))
-                {
-                    // Skip deallocate statements
-                    Consume(FortranTokenKind.LParen, "Expected '(' after deallocate");
-                    int depth = 1;
-                    while (depth > 0 && !IsAtEnd)
-                    {
-                        if (Check(FortranTokenKind.LParen)) depth++;
-                        else if (Check(FortranTokenKind.RParen)) depth--;
-                        Advance();
-                    }
-                    continue;
-                }
-
-                if (Match(FortranTokenKind.KeywordPrint))
-                {
-                    statements.Add(ParsePrintStatement());
-                    continue;
-                }
-
-                if (Match(FortranTokenKind.KeywordCall))
-                {
-                    statements.Add(ParseCallStatement());
-                    continue;
-                }
-
-                if (Match(FortranTokenKind.KeywordDo))
-                {
-                    // Skip DO loops
-                    int doNest = 1;
-                    while (doNest > 0 && !IsAtEnd)
-                    {
-                        if (Check(FortranTokenKind.KeywordDo)) doNest++;
-                        else if (Check(FortranTokenKind.KeywordEnddo)) doNest--;
-                        Advance();
-                    }
-                    continue;
-                }
-
-                if (Check(FortranTokenKind.Identifier))
-                {
-                    statements.Add(ParseAssignment());
-                    continue;
-                }
-
-                // Skip any other tokens to be resilient
-                Advance();
+                SkipUnknownStatement();
             }
             catch
             {
-                // If anything fails, skip to next statement
-                while (!IsAtEnd && Current.Kind != FortranTokenKind.KeywordImplicit &&
-                       Current.Kind != FortranTokenKind.KeywordPrint &&
-                       Current.Kind != FortranTokenKind.KeywordCall &&
-                       Current.Kind != FortranTokenKind.KeywordAllocate &&
-                       Current.Kind != FortranTokenKind.KeywordDeallocate &&
-                       Current.Kind != FortranTokenKind.KeywordDo &&
-                       Current.Kind != FortranTokenKind.KeywordEnd)
-                {
-                    Advance();
-                }
+                SkipUnknownStatement();
             }
         }
 
@@ -275,87 +190,25 @@ internal sealed class FortranParser
         }
 
         var statements = new List<FortranStatement>();
-        // Check for END SUBROUTINE (compound token) or END keyword
-        while (!Check(FortranTokenKind.KeywordEnd) && 
-               !Check(FortranTokenKind.KeywordEndSubroutine) && !IsAtEnd)
+        while (!Check(FortranTokenKind.KeywordEnd) &&
+               !Check(FortranTokenKind.KeywordEndSubroutine) &&
+               !IsAtEnd)
         {
-            if (Match(FortranTokenKind.KeywordImplicit))
+            try
             {
-                Consume(FortranTokenKind.KeywordNone, "Expected 'none' after 'implicit'");
-                statements.Add(new FortranImplicitNoneStatement());
-                continue;
-            }
-
-            if (IsTypeSpecifier(Current.Kind))
-            {
-                // Skip Fortran 90 declarations in subroutine
-                Advance(); // consume type
-                
-                // Skip all declaration tokens until we reach a statement
-                int depth = 0;
-                while (!IsAtEnd && Current.Kind != FortranTokenKind.KeywordImplicit &&
-                       Current.Kind != FortranTokenKind.KeywordPrint &&
-                       Current.Kind != FortranTokenKind.KeywordCall &&
-                       Current.Kind != FortranTokenKind.KeywordReturn &&
-                       Current.Kind != FortranTokenKind.KeywordDo &&
-                       Current.Kind != FortranTokenKind.KeywordEnd &&
-                       Current.Kind != FortranTokenKind.KeywordEndSubroutine)
+                var statement = TryParseExecutableStatement(allowReturn: true);
+                if (statement != null)
                 {
-                    if (Current.Kind == FortranTokenKind.LParen)
-                        depth++;
-                    else if (Current.Kind == FortranTokenKind.RParen)
-                        depth--;
-                    else if (depth == 0 && Current.Kind == FortranTokenKind.Identifier &&
-                             Previous.Kind != FortranTokenKind.Comma)
-                        break; // Hit variable name after declaration
-                    Advance();
+                    statements.Add(statement);
+                    continue;
                 }
-                continue;
-            }
 
-            if (Match(FortranTokenKind.KeywordPrint))
+                SkipUnknownStatement();
+            }
+            catch
             {
-                statements.Add(ParsePrintStatement());
-                continue;
+                SkipUnknownStatement();
             }
-
-            if (Match(FortranTokenKind.KeywordCall))
-            {
-                statements.Add(ParseCallStatement());
-                continue;
-            }
-
-            if (Match(FortranTokenKind.KeywordReturn))
-            {
-                statements.Add(new FortranReturnStatement());
-                continue;
-            }
-
-            if (Check(FortranTokenKind.Identifier))
-            {
-                try
-                {
-                    statements.Add(ParseAssignment());
-                }
-                catch
-                {
-                    // If parsing fails, skip this line
-                    while (!IsAtEnd && Current.Kind != FortranTokenKind.KeywordImplicit &&
-                           Current.Kind != FortranTokenKind.KeywordPrint &&
-                           Current.Kind != FortranTokenKind.KeywordCall &&
-                           Current.Kind != FortranTokenKind.KeywordReturn &&
-                           Current.Kind != FortranTokenKind.KeywordDo &&
-                           Current.Kind != FortranTokenKind.KeywordEnd &&
-                           Current.Kind != FortranTokenKind.KeywordEndSubroutine)
-                    {
-                        Advance();
-                    }
-                }
-                continue;
-            }
-
-            // For any other token, try to skip it
-            Advance();
         }
 
         // Consume END SUBROUTINE (compound token)
@@ -619,7 +472,7 @@ internal sealed class FortranParser
             || kind == FortranTokenKind.KeywordFunction;
     }
 
-    private FortranStatement ParseAssignment()
+    private FortranAssignmentStatement? ParseAssignment()
     {
         string name = Consume(FortranTokenKind.Identifier, "Expected identifier").Text;
         
@@ -636,8 +489,9 @@ internal sealed class FortranParser
                 else if (Check(FortranTokenKind.RParen)) depth--;
                 Advance();
             }
-            // Return a dummy statement
-            return new FortranImplicitNoneStatement(); // placeholder
+            // If this was followed by assignment we currently don't support it
+            // Treat it as unrecognized for now.
+            return null;
         }
         
         if (!Check(FortranTokenKind.Equals))
@@ -645,20 +499,319 @@ internal sealed class FortranParser
             // Not an assignment - skip this line
             while (!IsAtEnd && Current.Kind != FortranTokenKind.KeywordImplicit &&
                    Current.Kind != FortranTokenKind.KeywordPrint &&
+                   Current.Kind != FortranTokenKind.KeywordRead &&
+                   Current.Kind != FortranTokenKind.KeywordWrite &&
                    Current.Kind != FortranTokenKind.KeywordCall &&
                    Current.Kind != FortranTokenKind.KeywordAllocate &&
                    Current.Kind != FortranTokenKind.KeywordDeallocate &&
                    Current.Kind != FortranTokenKind.KeywordDo &&
+                   Current.Kind != FortranTokenKind.KeywordIf &&
                    Current.Kind != FortranTokenKind.KeywordEnd)
             {
                 Advance();
             }
-            return new FortranImplicitNoneStatement(); // placeholder
+            return null;
         }
         
         Consume(FortranTokenKind.Equals, "Expected '=' in assignment");
         var expression = ParseExpression();
         return new FortranAssignmentStatement(name, expression);
+    }
+
+    private FortranStatement? TryParseExecutableStatement(bool allowReturn)
+    {
+        if (Match(FortranTokenKind.KeywordImplicit))
+        {
+            if (Match(FortranTokenKind.KeywordNone))
+            {
+                return new FortranImplicitNoneStatement();
+            }
+
+            return null;
+        }
+
+        if (IsTypeSpecifier(Current.Kind))
+        {
+            var declaration = TryParseLooseDeclaration();
+            if (declaration != null)
+            {
+                return declaration;
+            }
+
+            return null;
+        }
+
+        if (Match(FortranTokenKind.KeywordAllocate))
+        {
+            SkipParenthesizedStatement();
+            return null;
+        }
+
+        if (Match(FortranTokenKind.KeywordDeallocate))
+        {
+            SkipParenthesizedStatement();
+            return null;
+        }
+
+        if (Match(FortranTokenKind.KeywordPrint))
+        {
+            return ParsePrintStatement();
+        }
+
+        if (Match(FortranTokenKind.KeywordRead))
+        {
+            return ParseReadStatement();
+        }
+
+        if (Match(FortranTokenKind.KeywordWrite))
+        {
+            return ParseWriteStatement();
+        }
+
+        if (Match(FortranTokenKind.KeywordCall))
+        {
+            return ParseCallStatement();
+        }
+
+        if (Match(FortranTokenKind.KeywordIf))
+        {
+            return ParseIfConstruct(allowReturn);
+        }
+
+        if (Match(FortranTokenKind.KeywordDo))
+        {
+            return ParseDoConstruct(allowReturn);
+        }
+
+        if (allowReturn && Match(FortranTokenKind.KeywordReturn))
+        {
+            return new FortranReturnStatement();
+        }
+
+        if (Check(FortranTokenKind.Identifier))
+        {
+            return ParseAssignment();
+        }
+
+        return null;
+    }
+
+    private void SkipParenthesizedStatement()
+    {
+        if (!Match(FortranTokenKind.LParen))
+        {
+            return;
+        }
+
+        int depth = 1;
+        while (depth > 0 && !IsAtEnd)
+        {
+            if (Check(FortranTokenKind.LParen))
+            {
+                depth++;
+            }
+            else if (Check(FortranTokenKind.RParen))
+            {
+                depth--;
+            }
+            Advance();
+        }
+    }
+
+    private List<FortranStatement> ParseStatementBlock(bool allowReturn, params FortranTokenKind[] terminators)
+    {
+        var statements = new List<FortranStatement>();
+        while (!IsAtEnd && !IsCurrentTerminator(terminators))
+        {
+            try
+            {
+                var statement = TryParseExecutableStatement(allowReturn);
+                if (statement != null)
+                {
+                    statements.Add(statement);
+                    continue;
+                }
+
+                SkipUnknownStatement();
+            }
+            catch
+            {
+                SkipUnknownStatement();
+            }
+        }
+
+        return statements;
+    }
+
+    private FortranStatement ParseDoConstruct(bool allowReturn)
+    {
+        int? label = null;
+        if (Check(FortranTokenKind.IntegerLiteral))
+        {
+            label = int.Parse(Advance().Text, CultureInfo.InvariantCulture);
+            Match(FortranTokenKind.Comma);
+        }
+
+        if (CheckIdentifier("while"))
+        {
+            Advance();
+            Consume(FortranTokenKind.LParen, "Expected '(' after DO WHILE");
+            var condition = ParseExpression();
+            Consume(FortranTokenKind.RParen, "Expected ')' after DO WHILE condition");
+
+            var body = ParseStatementBlock(allowReturn, FortranTokenKind.KeywordEnddo, FortranTokenKind.KeywordEnd);
+            ConsumeEndDo();
+
+            return new FortranDoWhileStatement(condition, body);
+        }
+
+        string loopVariable = Consume(FortranTokenKind.Identifier, "Expected loop variable name").Text;
+        Consume(FortranTokenKind.Equals, "Expected '=' in DO assignment");
+        var start = ParseExpression();
+        Consume(FortranTokenKind.Comma, "Expected ',' after loop start expression");
+        var end = ParseExpression();
+
+        FortranExpression? step = null;
+        if (Match(FortranTokenKind.Comma))
+        {
+            step = ParseExpression();
+        }
+
+        var statements = ParseStatementBlock(allowReturn, FortranTokenKind.KeywordEnddo, FortranTokenKind.KeywordEnd);
+        ConsumeEndDo();
+
+        if (label.HasValue && Check(FortranTokenKind.IntegerLiteral))
+        {
+            Advance();
+        }
+
+        return new FortranDoStatement(loopVariable, start, end, step, statements, label);
+    }
+
+    private FortranIfStatement ParseIfConstruct(bool allowReturn)
+    {
+        Consume(FortranTokenKind.LParen, "Expected '(' after IF");
+        var condition = ParseExpression();
+        Consume(FortranTokenKind.RParen, "Expected ')' after IF condition");
+        Consume(FortranTokenKind.KeywordThen, "Expected THEN after IF condition");
+
+        var thenStatements = ParseStatementBlock(allowReturn,
+            FortranTokenKind.KeywordElse,
+            FortranTokenKind.KeywordElseif,
+            FortranTokenKind.KeywordEndif,
+            FortranTokenKind.KeywordEnd);
+
+        var elseIfParts = new List<(FortranExpression Condition, IReadOnlyList<FortranStatement> Statements)>();
+        while (Match(FortranTokenKind.KeywordElseif))
+        {
+            Consume(FortranTokenKind.LParen, "Expected '(' after ELSEIF");
+            var elseIfCondition = ParseExpression();
+            Consume(FortranTokenKind.RParen, "Expected ')' after ELSEIF condition");
+            Consume(FortranTokenKind.KeywordThen, "Expected THEN after ELSEIF condition");
+
+            var elseIfStatements = ParseStatementBlock(allowReturn,
+                FortranTokenKind.KeywordElse,
+                FortranTokenKind.KeywordElseif,
+                FortranTokenKind.KeywordEndif,
+                FortranTokenKind.KeywordEnd);
+            elseIfParts.Add((elseIfCondition, elseIfStatements));
+        }
+
+        IReadOnlyList<FortranStatement>? elseStatements = null;
+        if (Match(FortranTokenKind.KeywordElse))
+        {
+            elseStatements = ParseStatementBlock(allowReturn,
+                FortranTokenKind.KeywordEndif,
+                FortranTokenKind.KeywordEnd);
+        }
+
+        ConsumeEndIf();
+
+        return new FortranIfStatement(condition, thenStatements, elseIfParts, elseStatements);
+    }
+
+    private void ConsumeEndDo()
+    {
+        if (Match(FortranTokenKind.KeywordEnddo))
+        {
+            return;
+        }
+
+        Consume(FortranTokenKind.KeywordEnd, "Expected 'end do'");
+        Match(FortranTokenKind.KeywordDo);
+    }
+
+    private void ConsumeEndIf()
+    {
+        if (Match(FortranTokenKind.KeywordEndif))
+        {
+            return;
+        }
+
+        Consume(FortranTokenKind.KeywordEnd, "Expected 'end if'");
+        Match(FortranTokenKind.KeywordIf);
+    }
+
+    private void SkipUnknownStatement()
+    {
+        int start = _position;
+        while (!IsAtEnd && !IsStatementBoundary(Current.Kind))
+        {
+            Advance();
+        }
+
+        if (start == _position && !IsAtEnd)
+        {
+            Advance();
+        }
+    }
+
+    private bool IsStatementBoundary(FortranTokenKind kind)
+    {
+        return kind == FortranTokenKind.KeywordImplicit
+            || kind == FortranTokenKind.KeywordPrint
+            || kind == FortranTokenKind.KeywordRead
+            || kind == FortranTokenKind.KeywordWrite
+            || kind == FortranTokenKind.KeywordCall
+            || kind == FortranTokenKind.KeywordAllocate
+            || kind == FortranTokenKind.KeywordDeallocate
+            || kind == FortranTokenKind.KeywordDo
+            || kind == FortranTokenKind.KeywordIf
+            || kind == FortranTokenKind.KeywordElse
+            || kind == FortranTokenKind.KeywordElseif
+            || kind == FortranTokenKind.KeywordEnd
+            || kind == FortranTokenKind.KeywordEnddo
+            || kind == FortranTokenKind.KeywordEndif
+            || kind == FortranTokenKind.KeywordEndProgram
+            || kind == FortranTokenKind.KeywordEndSubroutine
+            || kind == FortranTokenKind.KeywordReturn
+            || kind == FortranTokenKind.KeywordContains;
+    }
+
+    private bool IsCurrentTerminator(FortranTokenKind[] terminators)
+    {
+        foreach (var terminator in terminators)
+        {
+            if (terminator == FortranTokenKind.KeywordEnd)
+            {
+                if (Check(FortranTokenKind.KeywordEnd))
+                {
+                    return true;
+                }
+            }
+            else if (Check(terminator))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool CheckIdentifier(string text)
+    {
+        return Check(FortranTokenKind.Identifier) &&
+               string.Equals(Current.Text, text, StringComparison.OrdinalIgnoreCase);
     }
 
     private FortranStatement ParsePrintStatement()
@@ -715,6 +868,100 @@ internal sealed class FortranParser
         return new FortranPrintStatement(arguments);
     }
 
+    private FortranStatement ParseReadStatement()
+    {
+        // Support only list-directed READ(*,*) var1, var2, ...
+        // Best-effort parse; if malformed, skip statement.
+        try
+        {
+            if (!Match(FortranTokenKind.LParen))
+            {
+                SkipParenthesizedStatement();
+                return new FortranReadStatement(new List<string>());
+            }
+
+            // Expect '*'
+            if (!Match(FortranTokenKind.Star))
+            {
+                SkipParenthesizedStatement();
+                return new FortranReadStatement(new List<string>());
+            }
+
+            // Expect ','
+            if (!Match(FortranTokenKind.Comma))
+            {
+                SkipParenthesizedStatement();
+                return new FortranReadStatement(new List<string>());
+            }
+
+            // Expect '*'
+            if (!Match(FortranTokenKind.Star))
+            {
+                SkipParenthesizedStatement();
+                return new FortranReadStatement(new List<string>());
+            }
+
+            Consume(FortranTokenKind.RParen, "Expected ')' after READ(*,*)");
+
+            var variables = new List<string>();
+            // Parse variable list: identifier[, identifier]*
+            do
+            {
+                if (!Check(FortranTokenKind.Identifier))
+                {
+                    break;
+                }
+                variables.Add(Advance().Text);
+            }
+            while (Match(FortranTokenKind.Comma));
+
+            return new FortranReadStatement(variables);
+        }
+        catch
+        {
+            // On error, skip remainder
+            return new FortranReadStatement(new List<string>());
+        }
+    }
+
+    private FortranStatement ParseWriteStatement()
+    {
+        // Treat WRITE(*,*) expr-list as PRINT *, expr-list
+        try
+        {
+            if (!Match(FortranTokenKind.LParen))
+            {
+                SkipParenthesizedStatement();
+                return new FortranWriteStatement(new List<FortranExpression>());
+            }
+
+            if (!Match(FortranTokenKind.Star) || !Match(FortranTokenKind.Comma) || !Match(FortranTokenKind.Star))
+            {
+                SkipParenthesizedStatement();
+                return new FortranWriteStatement(new List<FortranExpression>());
+            }
+
+            Consume(FortranTokenKind.RParen, "Expected ')' after WRITE(*,*)");
+
+            var arguments = new List<FortranExpression>();
+            try
+            {
+                arguments.Add(ParseExpression());
+                while (Match(FortranTokenKind.Comma))
+                {
+                    try { arguments.Add(ParseExpression()); } catch { break; }
+                }
+            }
+            catch { }
+
+            return new FortranWriteStatement(arguments);
+        }
+        catch
+        {
+            return new FortranWriteStatement(new List<FortranExpression>());
+        }
+    }
+
     private FortranStatement ParseCallStatement()
     {
         string name = Consume(FortranTokenKind.Identifier, "Expected procedure name").Text;
@@ -737,7 +984,126 @@ internal sealed class FortranParser
 
     private FortranExpression ParseExpression()
     {
-        return ParseAdditive();
+        return ParseLogicalOr();
+    }
+
+    private FortranExpression ParseLogicalOr()
+    {
+        var expr = ParseLogicalAnd();
+        while (Match(FortranTokenKind.OrFortran))
+        {
+            var right = ParseLogicalAnd();
+            expr = new FortranBinaryExpression(expr, FortranBinaryOperator.Or, right);
+        }
+
+        return expr;
+    }
+
+    private FortranExpression ParseLogicalAnd()
+    {
+        var expr = ParseComparison();
+        while (Match(FortranTokenKind.AndFortran))
+        {
+            var right = ParseComparison();
+            expr = new FortranBinaryExpression(expr, FortranBinaryOperator.And, right);
+        }
+
+        return expr;
+    }
+
+    private FortranExpression ParseComparison()
+    {
+        var expr = ParseAdditive();
+        while (true)
+        {
+            if (Match(FortranTokenKind.EqFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.EqFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.EqModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.EqModern, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.NeFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.NeFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.NeModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.NeModern, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.LtFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.LtFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.LtModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.LtModern, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.LeFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.LeFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.LeModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.LeModern, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.GtFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.GtFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.GtModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.GtModern, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.GeFortran))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.GeFortran, right);
+                continue;
+            }
+
+            if (Match(FortranTokenKind.GeModern))
+            {
+                var right = ParseAdditive();
+                expr = new FortranBinaryExpression(expr, FortranBinaryOperator.GeModern, right);
+                continue;
+            }
+
+            break;
+        }
+
+        return expr;
     }
 
     private FortranExpression ParseAdditive()
@@ -802,6 +1168,12 @@ internal sealed class FortranParser
         {
             var operand = ParseUnary();
             return new FortranUnaryExpression(FortranUnaryOperator.Minus, operand);
+        }
+
+        if (Match(FortranTokenKind.NotFortran))
+        {
+            var operand = ParseUnary();
+            return new FortranUnaryExpression(FortranUnaryOperator.Not, operand);
         }
 
         return ParsePrimary();

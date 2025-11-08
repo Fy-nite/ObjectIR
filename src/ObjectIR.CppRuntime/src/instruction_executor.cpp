@@ -3,10 +3,19 @@
 #include <cmath>
 #include <cctype>
 #include <iostream>
+#include <stdexcept>
 
 namespace ObjectIR {
 
 namespace {
+
+struct BreakSignal : public std::exception {
+    const char* what() const noexcept override { return "break"; }
+};
+
+struct ContinueSignal : public std::exception {
+    const char* what() const noexcept override { return "continue"; }
+};
 
 std::string ToLowerInvariant(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
@@ -14,6 +23,9 @@ std::string ToLowerInvariant(std::string value) {
     });
     return value;
 }
+
+Instruction::ConditionData ParseConditionNode(const json& node);
+std::vector<Instruction> ParseInstructionArray(const json& node);
 
 bool EqualsIgnoreCase(const std::string& lhs, const std::string& rhs) {
     return ToLowerInvariant(lhs) == ToLowerInvariant(rhs);
@@ -97,6 +109,60 @@ std::string ValueToString(const Value& value) {
     return "";
 }
 
+Instruction::ConditionData ParseConditionNode(const json& node) {
+    Instruction::ConditionData data;
+
+    if (!node.is_object()) {
+        throw std::runtime_error("Condition node must be an object");
+    }
+
+    auto kindIt = node.find("kind");
+    if (kindIt == node.end() || !kindIt->is_string()) {
+        throw std::runtime_error("Condition kind missing");
+    }
+
+    auto kindStr = kindIt->get<std::string>();
+    if (kindStr == "stack") {
+        data.kind = ConditionKind::Stack;
+    } else if (kindStr == "binary") {
+        data.kind = ConditionKind::Binary;
+    } else if (kindStr == "expression") {
+        data.kind = ConditionKind::Expression;
+    } else {
+        throw std::runtime_error("Unsupported condition kind: " + kindStr);
+    }
+
+    if (data.kind == ConditionKind::Binary) {
+        auto opIt = node.find("operation");
+        if (opIt == node.end() || !opIt->is_string()) {
+            throw std::runtime_error("Binary condition missing operation");
+        }
+        data.comparisonOp = InstructionExecutor::ParseOpCode(opIt->get<std::string>());
+    }
+
+    if (data.kind == ConditionKind::Expression) {
+        auto exprIt = node.find("expression");
+        if (exprIt != node.end()) {
+            data.expressionInstructions.push_back(InstructionExecutor::ParseJsonInstruction(*exprIt));
+        }
+    }
+
+    return data;
+}
+
+std::vector<Instruction> ParseInstructionArray(const json& node) {
+    std::vector<Instruction> result;
+    if (!node.is_array()) {
+        return result;
+    }
+
+    result.reserve(node.size());
+    for (const auto& element : node) {
+        result.push_back(InstructionExecutor::ParseJsonInstruction(element));
+    }
+    return result;
+}
+
 } // namespace
 
 OpCode InstructionExecutor::ParseOpCode(const std::string& opStr) {
@@ -154,6 +220,7 @@ OpCode InstructionExecutor::ParseOpCode(const std::string& opStr) {
     if (opStr == "break") return OpCode::Break;
     if (opStr == "continue") return OpCode::Continue;
     if (opStr == "throw") return OpCode::Throw;
+    if (opStr == "while") return OpCode::While;
     
     throw std::runtime_error("Unknown opcode: " + opStr);
 }
@@ -227,6 +294,21 @@ Instruction InstructionExecutor::ParseJsonInstruction(const json& instrJson) {
             }
             break;
 
+        case OpCode::While: {
+            if (!operand.is_object()) {
+                throw std::runtime_error("While instruction operand must be object");
+            }
+            Instruction::WhileData data;
+            if (operand.contains("condition")) {
+                data.condition = ParseConditionNode(operand.at("condition"));
+            }
+            if (operand.contains("body")) {
+                data.body = ParseInstructionArray(operand.at("body"));
+            }
+            instr.whileData = std::move(data);
+            break;
+        }
+
         default:
             if (operand.is_string()) {
                 instr.operandString = operand.get<std::string>();
@@ -262,7 +344,7 @@ void InstructionExecutor::Execute(
         }
         
         case OpCode::Pop: {
-            context->PopStack();
+            (void)context->PopStack();
             break;
         }
 
@@ -426,9 +508,34 @@ void InstructionExecutor::Execute(
         }
         
         case OpCode::Break:
+            throw BreakSignal();
+
         case OpCode::Continue:
+            throw ContinueSignal();
+
+        case OpCode::While: {
+            if (!instr.whileData.has_value()) {
+                throw std::runtime_error("While instruction missing metadata");
+            }
+
+            const auto& whileData = instr.whileData.value();
+
+            while (EvaluateCondition(whileData.condition, context, vm)) {
+                try {
+                    for (const auto& bodyInstr : whileData.body) {
+                        Execute(bodyInstr, context, vm);
+                    }
+                } catch (const ContinueSignal&) {
+                    continue;
+                } catch (const BreakSignal&) {
+                    break;
+                }
+            }
+            break;
+        }
+
         case OpCode::Throw:
-            throw std::runtime_error("Instruction not yet implemented: " + std::to_string(static_cast<int>(instr.opCode)));
+            throw std::runtime_error("Instruction not yet implemented: throw");
         
         default:
             throw std::runtime_error("Unknown instruction opcode");
@@ -445,12 +552,97 @@ Value InstructionExecutor::ExecuteInstructions(
     context->SetThis(thisPtr);
     context->SetArguments(args);
     
-    for (const auto& instr : instructions) {
+    for (size_t i = 0; i < instructions.size(); ++i) {
+        const auto& instr = instructions[i];
+        
         if (instr.opCode == OpCode::Ret) {
             try {
                 return context->PopStack();
             } catch (...) {
                 return Value();
+            }
+        }
+        
+        // Special handling for while loops with binary conditions
+        // Need to re-execute setup instructions before each condition check
+        if (instr.opCode == OpCode::While && instr.whileData.has_value()) {
+            const auto& whileData = instr.whileData.value();
+            if (whileData.condition.kind == ConditionKind::Binary) {
+                // Look back to collect setup instructions (ldloc, ldc immediately before while)
+                std::vector<Instruction> setupInstrs;
+                int setupIdx = static_cast<int>(i) - 1;
+                
+                while (setupIdx >= 0) {
+                    const auto& prevInstr = instructions[setupIdx];
+                    if (prevInstr.opCode == OpCode::LdLoc || 
+                        prevInstr.opCode == OpCode::LdCon ||
+                        prevInstr.opCode == OpCode::LdI4 ||
+                        prevInstr.opCode == OpCode::LdI8 ||
+                        prevInstr.opCode == OpCode::LdR4 ||
+                        prevInstr.opCode == OpCode::LdR8 ||
+                        prevInstr.opCode == OpCode::LdTrue ||
+                        prevInstr.opCode == OpCode::LdFalse ||
+                        prevInstr.opCode == OpCode::LdNull) {
+                        setupInstrs.insert(setupInstrs.begin(), prevInstr);
+                        setupIdx--;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Execute while loop, re-running setup before each condition check
+                while (true) {
+                    // Re-execute setup to ensure values are on stack for condition check
+                    for (const auto& setupInstr : setupInstrs) {
+                        Execute(setupInstr, context, vm);
+                    }
+                    
+                    // Evaluate condition (without running setup again)
+                    bool cond_result;
+                    switch (whileData.condition.kind) {
+                        case ConditionKind::Binary: {
+                            if (whileData.condition.comparisonOp == OpCode::Nop) {
+                                throw std::runtime_error("Binary condition missing comparison operation");
+                            }
+                            auto right = context->PopStack();
+                            auto left = context->PopStack();
+                            context->PushStack(left);
+                            context->PushStack(right);
+                            
+                            switch (whileData.condition.comparisonOp) {
+                                case OpCode::Ceq: ExecuteCeq(context); break;
+                                case OpCode::Cne: ExecuteCne(context); break;
+                                case OpCode::Clt: ExecuteClt(context); break;
+                                case OpCode::Cle: ExecuteCle(context); break;
+                                case OpCode::Cgt: ExecuteCgt(context); break;
+                                case OpCode::Cge: ExecuteCge(context); break;
+                                default:
+                                    throw std::runtime_error("Unsupported comparison opcode in binary condition");
+                            }
+                            
+                            auto result = context->PopStack();
+                            cond_result = ValueToBool(result);
+                            break;
+                        }
+                        default:
+                            throw std::runtime_error("Expected binary condition in special while handler");
+                    }
+                    
+                    if (!cond_result) {
+                        break;
+                    }
+                    
+                    try {
+                        for (const auto& bodyInstr : whileData.body) {
+                            Execute(bodyInstr, context, vm);
+                        }
+                    } catch (const ContinueSignal&) {
+                        continue;
+                    } catch (const BreakSignal&) {
+                        break;
+                    }
+                }
+                continue;  // Skip normal Execute call
             }
         }
         
@@ -673,6 +865,89 @@ void InstructionExecutor::ExecuteCge(ExecutionContext* context) {
     }
     
     context->PushStack(Value(result));
+}
+
+bool InstructionExecutor::EvaluateCondition(
+    const Instruction::ConditionData& condition,
+    ExecutionContext* context,
+    VirtualMachine* vm
+) {
+    for (const auto& setupInstr : condition.setupInstructions) {
+        Execute(setupInstr, context, vm);
+    }
+
+    switch (condition.kind) {
+        case ConditionKind::Stack: {
+            auto value = context->PopStack();
+            return ValueToBool(value);
+        }
+
+        case ConditionKind::Binary: {
+            if (condition.comparisonOp == OpCode::Nop) {
+                throw std::runtime_error("Binary condition missing comparison operation");
+            }
+
+            auto right = context->PopStack();
+            auto left = context->PopStack();
+
+            context->PushStack(left);
+            context->PushStack(right);
+
+            switch (condition.comparisonOp) {
+                case OpCode::Ceq: ExecuteCeq(context); break;
+                case OpCode::Cne: ExecuteCne(context); break;
+                case OpCode::Clt: ExecuteClt(context); break;
+                case OpCode::Cle: ExecuteCle(context); break;
+                case OpCode::Cgt: ExecuteCgt(context); break;
+                case OpCode::Cge: ExecuteCge(context); break;
+                default:
+                    throw std::runtime_error("Unsupported comparison opcode in binary condition");
+            }
+
+            auto result = context->PopStack();
+            return ValueToBool(result);
+        }
+
+        case ConditionKind::Expression: {
+            for (const auto& exprInstr : condition.expressionInstructions) {
+                Execute(exprInstr, context, vm);
+            }
+            auto result = context->PopStack();
+            return ValueToBool(result);
+        }
+
+        case ConditionKind::None:
+        default:
+            throw std::runtime_error("Condition kind not supported");
+    }
+}
+
+bool InstructionExecutor::ValueToBool(const Value& value) {
+    if (value.IsBool()) {
+        return value.AsBool();
+    }
+    if (value.IsNull()) {
+        return false;
+    }
+    if (value.IsInt32()) {
+        return value.AsInt32() != 0;
+    }
+    if (value.IsInt64()) {
+        return value.AsInt64() != 0;
+    }
+    if (value.IsFloat32()) {
+        return value.AsFloat32() != 0.0f;
+    }
+    if (value.IsFloat64()) {
+        return value.AsFloat64() != 0.0;
+    }
+    if (value.IsString()) {
+        return !value.AsString().empty();
+    }
+    if (value.IsObject()) {
+        return true;
+    }
+    return false;
 }
 
 } // namespace ObjectIR

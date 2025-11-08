@@ -13,6 +13,7 @@ string? inputPath = null;
 string? outputPath = null;
 string format = "text";
 string? intrinsicsPath = null;
+bool debug = false;
 
 for (int i = 0; i < args.Length; i++)
 {
@@ -42,6 +43,10 @@ for (int i = 0; i < args.Length; i++)
 		case "-h":
 			PrintUsage();
 			return;
+
+		case "--debug":
+			debug = true;
+			break;
 
 		case "--intrinsics":
 			if (i + 1 >= args.Length)
@@ -106,7 +111,7 @@ if (intrinsicsPath != null)
 		}) ?? new FortranIntrinsicConfig();
 		var registry = FortranIntrinsicRegistry.CreateDefault();
 		registry.LoadFromConfig(config);
-		options = new FortranCompilationOptions(registry);
+		options = new FortranCompilationOptions(registry, debug: debug);
 	}
 	catch (Exception ex)
 	{
@@ -116,7 +121,7 @@ if (intrinsicsPath != null)
 }
 else
 {
-	options = FortranCompilationOptions.Default;
+	options = FortranCompilationOptions.Default.WithDebug(debug);
 }
 
 var compiler = new FortranLanguageCompiler(options);
@@ -127,6 +132,10 @@ try
 	{
 		"text" => compiler.CompileSourceToText(source),
 		"json" => compiler.CompileSourceToJson(source),
+		"oir" => compiler.CompileSourceToOirText(source),
+		"yaml" => compiler.CompileSourceToYaml(source),
+		"markdown" => compiler.CompileSourceToMarkdown(source),
+
 		_ => throw new InvalidOperationException($"Unsupported format: {format}")
 	};
 

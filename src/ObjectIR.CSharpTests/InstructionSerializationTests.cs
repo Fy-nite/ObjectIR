@@ -270,8 +270,16 @@ public class InstructionSerializationTests
     public void SerializeAllComparisonOps()
     {
         // Arrange
-        var ops = new[] { ComparisonOp.Equal, ComparisonOp.Greater, ComparisonOp.Less };
-        var expected = new[] { "ceq", "cgt", "clt" };
+        var ops = new[]
+        {
+            ComparisonOp.Equal,
+            ComparisonOp.NotEqual,
+            ComparisonOp.Greater,
+            ComparisonOp.GreaterOrEqual,
+            ComparisonOp.Less,
+            ComparisonOp.LessOrEqual
+        };
+        var expected = new[] { "ceq", "cne", "cgt", "cge", "clt", "cle" };
 
         // Act & Assert
         for (int i = 0; i < ops.Length; i++)
@@ -281,5 +289,43 @@ public class InstructionSerializationTests
             var opCode = doc.RootElement.GetProperty("opCode").GetString();
             Assert.Equal(expected[i], opCode);
         }
+    }
+
+    [Fact]
+    public void SerializeWhileInstruction_IncludesConditionAndBody()
+    {
+        // Arrange
+        var whileInstruction = new WhileInstruction(new BinaryCondition(ComparisonOp.LessOrEqual));
+        whileInstruction.Body.Emit(new LoadLocalInstruction("i"));
+        whileInstruction.Body.Emit(new LoadConstantInstruction(10, TypeReference.Int32));
+
+        // Act
+        var doc = InstructionSerializer.SerializeInstruction(whileInstruction);
+        var operand = doc.RootElement.GetProperty("operand");
+        var condition = operand.GetProperty("condition");
+
+        // Assert
+        Assert.Equal("while", doc.RootElement.GetProperty("opCode").GetString());
+        Assert.Equal("binary", condition.GetProperty("kind").GetString());
+        Assert.Equal("cle", condition.GetProperty("operation").GetString());
+        Assert.Equal(2, operand.GetProperty("body").GetArrayLength());
+    }
+
+    [Fact]
+    public void DeserializeWhileInstruction_RecreatesStructure()
+    {
+        // Arrange
+        var original = new WhileInstruction(new BinaryCondition(ComparisonOp.NotEqual));
+        original.Body.Emit(new ContinueInstruction());
+        var doc = InstructionSerializer.SerializeInstruction(original);
+
+        // Act
+        var deserialized = Assert.IsType<WhileInstruction>(InstructionSerializer.DeserializeInstruction(doc.RootElement));
+
+        // Assert
+        var condition = Assert.IsType<BinaryCondition>(deserialized.Condition);
+        Assert.Equal(ComparisonOp.NotEqual, condition.Operation);
+        Assert.Single(deserialized.Body);
+        Assert.IsType<ContinueInstruction>(deserialized.Body[0]);
     }
 }

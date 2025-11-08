@@ -16,19 +16,15 @@ public sealed class InstructionSerializer
     /// </summary>
     public static JsonElement SerializeInstructions(InstructionList instructions)
     {
-        var jsonDocs = new List<JsonDocument>();
-        foreach (var instruction in instructions)
+        var data = instructions.Select(CreateInstructionData).ToList();
+
+        var options = new JsonSerializerOptions
         {
-            var doc = SerializeInstruction(instruction);
-            jsonDocs.Add(doc);
-        }
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
-        var options = new JsonSerializerOptions { WriteIndented = false };
-        var array = JsonSerializer.Serialize(
-            jsonDocs.Select(d => d.RootElement).ToList(),
-            options
-        );
-
+        var array = JsonSerializer.Serialize(data, options);
         return JsonDocument.Parse(array).RootElement;
     }
 
@@ -37,7 +33,21 @@ public sealed class InstructionSerializer
     /// </summary>
     public static JsonDocument SerializeInstruction(Instruction instruction)
     {
-        var data = instruction switch
+        var data = CreateInstructionData(instruction);
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        var json = JsonSerializer.Serialize(data, options);
+        return JsonDocument.Parse(json);
+    }
+
+    private static InstructionData CreateInstructionData(Instruction instruction)
+    {
+        return instruction switch
         {
             LoadArgInstruction lai => new InstructionData
             {
@@ -57,7 +67,8 @@ public sealed class InstructionSerializer
                     field = new
                     {
                         declaringType = lfi.Field.DeclaringType.GetQualifiedName(),
-                        name = lfi.Field.Name
+                        name = lfi.Field.Name,
+                        type = lfi.Field.FieldType.GetQualifiedName()
                     }
                 }
             },
@@ -69,7 +80,8 @@ public sealed class InstructionSerializer
                     field = new
                     {
                         declaringType = lsfi.Field.DeclaringType.GetQualifiedName(),
-                        name = lsfi.Field.Name
+                        name = lsfi.Field.Name,
+                        type = lsfi.Field.FieldType.GetQualifiedName()
                     }
                 }
             },
@@ -105,7 +117,8 @@ public sealed class InstructionSerializer
                     field = new
                     {
                         declaringType = sfi.Field.DeclaringType.GetQualifiedName(),
-                        name = sfi.Field.Name
+                        name = sfi.Field.Name,
+                        type = sfi.Field.FieldType.GetQualifiedName()
                     }
                 }
             },
@@ -117,7 +130,8 @@ public sealed class InstructionSerializer
                     field = new
                     {
                         declaringType = ssfi.Field.DeclaringType.GetQualifiedName(),
-                        name = ssfi.Field.Name
+                        name = ssfi.Field.Name,
+                        type = ssfi.Field.FieldType.GetQualifiedName()
                     }
                 }
             },
@@ -184,7 +198,7 @@ public sealed class InstructionSerializer
                 OpCode = "conv",
                 Operand = new { targetType = convi.TargetType.GetQualifiedName() }
             },
-            ReturnInstruction ri => new InstructionData
+            ReturnInstruction => new InstructionData
             {
                 OpCode = "ret",
                 Operand = null
@@ -209,17 +223,36 @@ public sealed class InstructionSerializer
                 OpCode = "continue",
                 Operand = null
             },
+            WhileInstruction wi => new InstructionData
+            {
+                OpCode = "while",
+                Operand = new WhileOperandData
+                {
+                    Condition = SerializeConditionData(wi.Condition),
+                    Body = wi.Body.Select(CreateInstructionData).ToList()
+                }
+            },
             _ => throw new NotSupportedException($"Instruction type {instruction.GetType().Name} not supported for serialization")
         };
+    }
 
-        var options = new JsonSerializerOptions
+    private static ConditionData SerializeConditionData(Condition condition)
+    {
+        return condition switch
         {
-            WriteIndented = false,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            StackCondition => new ConditionData { Kind = "stack" },
+            BinaryCondition bc => new ConditionData
+            {
+                Kind = "binary",
+                Operation = MapComparisonOp(bc.Operation)
+            },
+            ExpressionCondition ec => new ConditionData
+            {
+                Kind = "expression",
+                Expression = CreateInstructionData(ec.Expression)
+            },
+            _ => throw new NotSupportedException($"Condition type {condition.GetType().Name} not supported for serialization")
         };
-
-        var json = JsonSerializer.Serialize(data, options);
-        return JsonDocument.Parse(json);
     }
 
     /// <summary>
@@ -272,8 +305,11 @@ public sealed class InstructionSerializer
             "div" => new ArithmeticInstruction(ArithmeticOp.Div),
             "rem" => new ArithmeticInstruction(ArithmeticOp.Rem),
             "ceq" => new ComparisonInstruction(ComparisonOp.Equal),
+            "cne" => new ComparisonInstruction(ComparisonOp.NotEqual),
             "cgt" => new ComparisonInstruction(ComparisonOp.Greater),
+            "cge" => new ComparisonInstruction(ComparisonOp.GreaterOrEqual),
             "clt" => new ComparisonInstruction(ComparisonOp.Less),
+            "cle" => new ComparisonInstruction(ComparisonOp.LessOrEqual),
             "call" => new CallInstruction(DeserializeMethodReference(operand)),
             "callvirt" => new CallVirtualInstruction(DeserializeMethodReference(operand)),
             "newobj" => new NewObjectInstruction(TypeReference.FromName(GetString(operand, "type"))),
@@ -286,6 +322,7 @@ public sealed class InstructionSerializer
             "pop" => new PopInstruction(),
             "break" => new BreakInstruction(),
             "continue" => new ContinueInstruction(),
+            "while" => DeserializeWhileInstruction(operand),
             _ => throw new NotSupportedException($"OpCode '{opCode}' not supported for deserialization")
         };
     }
@@ -307,17 +344,71 @@ public sealed class InstructionSerializer
     private static string MapComparisonOp(ComparisonOp op) => op switch
     {
         ComparisonOp.Equal => "ceq",
+        ComparisonOp.NotEqual => "cne",
         ComparisonOp.Greater => "cgt",
+        ComparisonOp.GreaterOrEqual => "cge",
         ComparisonOp.Less => "clt",
+        ComparisonOp.LessOrEqual => "cle",
         _ => throw new ArgumentException($"Unknown comparison op: {op}")
     };
+
+    private static ComparisonOp ParseComparisonOp(string opCode) => opCode switch
+    {
+        "ceq" => ComparisonOp.Equal,
+        "cne" => ComparisonOp.NotEqual,
+        "cgt" => ComparisonOp.Greater,
+        "cge" => ComparisonOp.GreaterOrEqual,
+        "clt" => ComparisonOp.Less,
+        "cle" => ComparisonOp.LessOrEqual,
+        _ => throw new ArgumentException($"Unknown comparison op code: {opCode}")
+    };
+
+    private static WhileInstruction DeserializeWhileInstruction(JsonElement operand)
+    {
+        if (operand.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("While instruction operand must be an object");
+        }
+
+        var conditionElement = operand.GetProperty("condition");
+        var bodyElement = operand.GetProperty("body");
+
+        var condition = DeserializeCondition(conditionElement);
+        var bodyInstructions = DeserializeInstructions(bodyElement);
+
+        var whileInstruction = new WhileInstruction(condition);
+        whileInstruction.Body.AddRange(bodyInstructions);
+
+        return whileInstruction;
+    }
+
+    private static Condition DeserializeCondition(JsonElement element)
+    {
+        var kind = GetString(element, "kind");
+
+        return kind switch
+        {
+            "stack" => Condition.Stack(),
+            "binary" => new BinaryCondition(ParseComparisonOp(GetString(element, "operation"))),
+            "expression" => Condition.Expression(DeserializeInstruction(element.GetProperty("expression"))),
+            _ => throw new NotSupportedException($"Condition kind '{kind}' not supported for deserialization")
+        };
+    }
 
     private static FieldReference DeserializeFieldReference(JsonElement operand)
     {
         var fieldElement = operand.GetProperty("field");
         var declaringType = TypeReference.FromName(GetString(fieldElement, "declaringType"));
         var name = GetString(fieldElement, "name");
-        var fieldType = TypeReference.FromName(GetString(fieldElement, "type") ?? "object");
+        TypeReference fieldType;
+        if (fieldElement.TryGetProperty("type", out var typeElement))
+        {
+            fieldType = TypeReference.FromName(typeElement.GetString() ?? "object");
+        }
+        else
+        {
+            fieldType = TypeReference.FromName("object");
+        }
         
         return new FieldReference(declaringType, name, fieldType);
     }
@@ -348,12 +439,12 @@ public sealed class InstructionSerializer
 
         return type switch
         {
-            "System.Int32" => int.Parse(value),
-            "System.Int64" => long.Parse(value),
-            "System.Single" => float.Parse(value),
-            "System.Double" => double.Parse(value),
-            "System.String" => value,
-            "System.Boolean" => bool.Parse(value),
+            "System.Int32" or "int32" => int.Parse(value),
+            "System.Int64" or "int64" => long.Parse(value),
+            "System.Single" or "float32" => float.Parse(value),
+            "System.Double" or "float64" => double.Parse(value),
+            "System.String" or "string" => value,
+            "System.Boolean" or "bool" => bool.Parse(value),
             _ => value
         };
     }
@@ -377,5 +468,28 @@ public sealed class InstructionSerializer
         [JsonPropertyName("operand")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? Operand { get; set; }
+    }
+
+    private sealed class ConditionData
+    {
+        [JsonPropertyName("kind")]
+        public string Kind { get; set; } = string.Empty;
+
+        [JsonPropertyName("operation")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Operation { get; set; }
+
+        [JsonPropertyName("expression")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public InstructionData? Expression { get; set; }
+    }
+
+    private sealed class WhileOperandData
+    {
+        [JsonPropertyName("condition")]
+        public ConditionData Condition { get; set; } = new();
+
+        [JsonPropertyName("body")]
+        public List<InstructionData> Body { get; set; } = new();
     }
 }

@@ -71,6 +71,15 @@ enum class OpCode {
     Break,
     Continue,
     Throw,
+    While,
+};
+
+/// Represents the kind of structured condition used by high-level control flow
+enum class ConditionKind {
+    None,
+    Stack,
+    Binary,
+    Expression,
 };
 
 /// Data describing a method call target in the IR
@@ -102,6 +111,88 @@ struct Instruction {
 
     // Method call target information
     std::optional<CallTarget> callTarget;
+
+    struct ConditionData {
+        ConditionKind kind = ConditionKind::None;
+        OpCode comparisonOp = OpCode::Nop;
+        std::vector<Instruction> setupInstructions;
+        std::vector<Instruction> expressionInstructions;
+
+        ConditionData() = default;
+        ConditionData(const ConditionData& other)
+            : kind(other.kind),
+              comparisonOp(other.comparisonOp),
+              setupInstructions(other.setupInstructions),
+              expressionInstructions(other.expressionInstructions) {}
+        ConditionData& operator=(const ConditionData& other) {
+            if (this != &other) {
+                kind = other.kind;
+                comparisonOp = other.comparisonOp;
+                setupInstructions = other.setupInstructions;
+                expressionInstructions = other.expressionInstructions;
+            }
+            return *this;
+        }
+        ConditionData(ConditionData&&) noexcept = default;
+        ConditionData& operator=(ConditionData&&) noexcept = default;
+    };
+
+    struct WhileData {
+        ConditionData condition;
+        std::vector<Instruction> body;
+
+        WhileData() = default;
+        WhileData(const WhileData& other)
+            : condition(other.condition),
+              body(other.body) {}
+        WhileData& operator=(const WhileData& other) {
+            if (this != &other) {
+                condition = other.condition;
+                body = other.body;
+            }
+            return *this;
+        }
+        WhileData(WhileData&&) noexcept = default;
+        WhileData& operator=(WhileData&&) noexcept = default;
+    };
+
+    std::optional<WhileData> whileData;
+
+    Instruction() = default;
+    Instruction(const Instruction& other)
+        : opCode(other.opCode),
+          operandString(other.operandString),
+          operandInt(other.operandInt),
+          operandDouble(other.operandDouble),
+          hasConstant(other.hasConstant),
+          constantType(other.constantType),
+          constantRawValue(other.constantRawValue),
+          constantBool(other.constantBool),
+          constantIsNull(other.constantIsNull),
+          identifier(other.identifier),
+          callTarget(other.callTarget),
+          whileData(other.whileData) {}
+
+    Instruction& operator=(const Instruction& other) {
+        if (this != &other) {
+            opCode = other.opCode;
+            operandString = other.operandString;
+            operandInt = other.operandInt;
+            operandDouble = other.operandDouble;
+            hasConstant = other.hasConstant;
+            constantType = other.constantType;
+            constantRawValue = other.constantRawValue;
+            constantBool = other.constantBool;
+            constantIsNull = other.constantIsNull;
+            identifier = other.identifier;
+            callTarget = other.callTarget;
+            whileData = other.whileData;
+        }
+        return *this;
+    }
+
+    Instruction(Instruction&&) noexcept = default;
+    Instruction& operator=(Instruction&&) noexcept = default;
 };
 
 } // namespace ObjectIR

@@ -16,7 +16,7 @@ public sealed class FortranLanguageCompiler
     {
         var lexer = new FortranLexer(source);
         var tokens = lexer.Tokenize();
-        var parser = new FortranParser(tokens);
+    var parser = new FortranParserV2(tokens, _options.Debug);
         var program = parser.ParseProgram();
         var compiler = new FortranCompiler(_options);
         
@@ -49,5 +49,21 @@ public sealed class FortranLanguageCompiler
     {
         var module = CompileSource(source);
         return module.DumpText();
+    }
+
+    internal string CompileSourceToOirText(string source)
+    {
+        var module = CompileSource(source);
+        return module.DumpText();
+    }
+    public string CompileSourceToMarkdown(string source)
+    {
+        var module = CompileSource(source);
+        return AdvancedModuleFormats.DumpToMarkdown(module.Dump());
+    }
+    public string CompileSourceToYaml(string source)
+    {
+        var module = CompileSource(source);
+        return module.DumpYaml();
     }
 }

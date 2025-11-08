@@ -1,9 +1,94 @@
 #include "ir_loader.hpp"
 #include "instruction_executor.hpp"
+#include "stdlib.hpp"
 #include <fstream>
 #include <algorithm>
 
 namespace ObjectIR {
+
+namespace {
+
+// Helper to compute stack effect of a single instruction
+int GetStackDelta(const Instruction& instr) {
+    switch (instr.opCode) {
+        // Load operations - push one value
+        case OpCode::LdArg:
+        case OpCode::LdLoc:
+        case OpCode::LdFld:
+        case OpCode::LdCon:
+        case OpCode::LdStr:
+        case OpCode::LdI4:
+        case OpCode::LdI8:
+        case OpCode::LdR4:
+        case OpCode::LdR8:
+        case OpCode::LdTrue:
+        case OpCode::LdFalse:
+        case OpCode::LdNull:
+            return 1;
+
+        // Store operations - pop one value
+        case OpCode::StLoc:
+        case OpCode::StFld:
+        case OpCode::StArg:
+            return -1;
+
+        // Binary arithmetic/comparison - pop two, push one
+        case OpCode::Add:
+        case OpCode::Sub:
+        case OpCode::Mul:
+        case OpCode::Div:
+        case OpCode::Rem:
+        case OpCode::Ceq:
+        case OpCode::Cne:
+        case OpCode::Clt:
+        case OpCode::Cle:
+        case OpCode::Cgt:
+        case OpCode::Cge:
+            return -1;
+
+        // Unary operations - pop one, push one
+        case OpCode::Neg:
+            return 0;
+
+        case OpCode::Dup:
+            return 1;
+
+        case OpCode::Pop:
+            return -1;
+
+        case OpCode::Call:
+        case OpCode::CallVirt: {
+            int delta = 0;
+            if (instr.callTarget.has_value()) {
+                delta -= static_cast<int>(instr.callTarget->parameterTypes.size());
+                bool isVoidReturn = instr.callTarget->returnType.empty() ||
+                    instr.callTarget->returnType == "void" ||
+                    instr.callTarget->returnType == "System.Void";
+                if (!isVoidReturn) {
+                    delta += 1;
+                }
+            }
+            if (instr.opCode == OpCode::CallVirt) {
+                delta -= 1; // pop instance
+            }
+            return delta;
+        }
+
+        case OpCode::NewObj:
+        case OpCode::NewArr:
+            return 1;
+
+        case OpCode::Ret:
+            return -1;
+
+        default:
+            return 0;
+    }
+}
+
+} // namespace
+
+
 
 std::shared_ptr<VirtualMachine> IRLoader::LoadFromFile(const std::string& filePath) {
     std::ifstream file(filePath);
@@ -27,6 +112,9 @@ std::shared_ptr<VirtualMachine> IRLoader::LoadFromString(const std::string& json
 
 std::shared_ptr<VirtualMachine> IRLoader::ParseModule(const json& moduleJson) {
     auto vm = std::make_shared<VirtualMachine>();
+    
+    // Register standard library types and methods
+    RegisterStandardLibrary(vm);
     
     // Extract module metadata
     std::string moduleName = moduleJson.value("Name", "UnnamedModule");
@@ -226,7 +314,9 @@ void IRLoader::LoadMethods(
             std::vector<Instruction> instructions;
             instructions.reserve(methodJson["Instructions"].size());
             for (const auto& instructionJson : methodJson["Instructions"]) {
-                instructions.push_back(InstructionExecutor::ParseJsonInstruction(instructionJson));
+                Instruction instr = InstructionExecutor::ParseJsonInstruction(instructionJson);
+                // While instructions are parsed with their metadata already intact
+                instructions.push_back(instr);
             }
             method->SetInstructions(std::move(instructions));
         }

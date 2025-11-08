@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ObjectIR.Core.Builder;
 using ObjectIR.Core.IR;
 
@@ -8,12 +9,16 @@ namespace ObjectIR.Fortran.Compiler;
 internal sealed class FortranCompiler
 {
     private readonly Dictionary<string, TypeReference> _locals = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TypeReference> _parameters = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FortranSubroutineDefinition> _subroutines = new(StringComparer.OrdinalIgnoreCase);
     private MethodBuilder? _methodBuilder;
     private InstructionBuilder? _instructions;
     private bool _implicitNone;
     private readonly FortranCompilationOptions _options;
     private string? _currentProgramName;
+    private bool _printBufferDeclared;
+    private bool _printTempDeclared;
+    private int _tempLocalCounter;
 
     public FortranCompiler(FortranCompilationOptions? options = null)
     {
@@ -23,9 +28,11 @@ internal sealed class FortranCompiler
     public Module Compile(FortranProgram program)
     {
         _locals.Clear();
+        _parameters.Clear();
         _subroutines.Clear();
         _implicitNone = false;
         _currentProgramName = program.Name;
+    _tempLocalCounter = 0;
 
         // Register all subroutines first
         foreach (var subroutine in program.Subroutines)
@@ -43,6 +50,9 @@ internal sealed class FortranCompiler
             .Access(AccessModifier.Public)
             .Static();
         _instructions = _methodBuilder.Body();
+        _tempLocalCounter = 0;
+        _printBufferDeclared = false;
+        _printTempDeclared = false;
 
         try
         {
@@ -124,20 +134,61 @@ internal sealed class FortranCompiler
     {
         // Clear locals for new scope
         var previousLocals = new Dictionary<string, TypeReference>(_locals);
+        var previousParams = new Dictionary<string, TypeReference>(_parameters);
         _locals.Clear();
+        _parameters.Clear();
 
         _methodBuilder = classBuilder.Method(subroutine.Name, TypeReference.Void)
             .Access(AccessModifier.Public)
             .Static();
 
-        // Add parameters as locals
+        // Determine parameter types from declarations inside the subroutine (or implicit typing)
+        var paramSet = new HashSet<string>(subroutine.Parameters, StringComparer.OrdinalIgnoreCase);
+        var paramTypes = new Dictionary<string, TypeReference>(StringComparer.OrdinalIgnoreCase);
+        bool subImplicitNone = false;
+        foreach (var stmt in subroutine.Statements)
+        {
+            if (stmt is FortranImplicitNoneStatement)
+            {
+                subImplicitNone = true;
+            }
+            else if (stmt is FortranDeclarationStatement decl)
+            {
+                var type = MapType(decl.Type);
+                foreach (var name in decl.Names)
+                {
+                    if (paramSet.Contains(name))
+                    {
+                        paramTypes[name] = type;
+                    }
+                }
+            }
+        }
+
+        // Define parameters and create locals to mirror them (so rest of pipeline can use ldloc/stloc)
         foreach (var param in subroutine.Parameters)
         {
-            _locals[param] = TypeReference.Void;
-            _methodBuilder.Local(param, TypeReference.Void);
+            var type = paramTypes.TryGetValue(param, out var t)
+                ? t
+                : (subImplicitNone ? InferImplicitType(param) : InferImplicitType(param));
+
+            _methodBuilder.Parameter(param, type);
+            _parameters[param] = type;
+            _locals[param] = type;
+            _methodBuilder.Local(param, type);
         }
 
         _instructions = _methodBuilder.Body();
+    _tempLocalCounter = 0;
+        _printBufferDeclared = false;
+        _printTempDeclared = false;
+
+        // Prologue: copy parameters into matching locals
+        foreach (var param in subroutine.Parameters)
+        {
+            _instructions.Ldarg(param);
+            _instructions.Stloc(param);
+        }
 
         foreach (var statement in subroutine.Statements)
         {
@@ -154,26 +205,86 @@ internal sealed class FortranCompiler
         {
             _locals[kvp.Key] = kvp.Value;
         }
+        _parameters.Clear();
+        foreach (var kvp in previousParams)
+        {
+            _parameters[kvp.Key] = kvp.Value;
+        }
     }
 
     private void EmitStatement(FortranStatement statement)
     {
+        if (_options.Debug)
+        {
+            System.Console.Error.WriteLine($"[FORTRAN] EmitStatement: {statement.GetType().Name}");
+        }
         switch (statement)
         {
             case FortranImplicitNoneStatement:
                 _implicitNone = true;
                 break;
             case FortranDeclarationStatement declaration:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Declaration: type={declaration.Type.Kind} names={string.Join(",", declaration.Names)}");
+                }
                 EmitDeclaration(declaration);
                 break;
             case FortranAssignmentStatement assignment:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Assignment: {assignment.Name} = <expr>");
+                }
                 EmitAssignment(assignment);
                 break;
             case FortranPrintStatement print:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Print with {print.Arguments.Count} arg(s)");
+                }
                 EmitPrint(print);
                 break;
+            case FortranReadStatement read:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Read targets: {string.Join(",", read.TargetVariables)}");
+                }
+                EmitRead(read);
+                break;
+            case FortranWriteStatement write:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Write args: {write.Arguments.Count}");
+                }
+                EmitWrite(write);
+                break;
             case FortranCallStatement call:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Call: {call.Name} args={call.Arguments.Count}");
+                }
                 EmitCall(call);
+                break;
+            case FortranIfStatement ifStatement:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] If statement");
+                }
+                EmitIf(ifStatement);
+                break;
+            case FortranDoStatement doStatement:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Do loop var={doStatement.LoopVariable}");
+                }
+                EmitDo(doStatement);
+                break;
+            case FortranDoWhileStatement doWhile:
+                if (_options.Debug)
+                {
+                    System.Console.Error.WriteLine($"[FORTRAN] Do While");
+                }
+                EmitDoWhile(doWhile);
                 break;
             case FortranReturnStatement:
                 _instructions!.Ret();
@@ -188,6 +299,11 @@ internal sealed class FortranCompiler
         var type = MapType(declaration.Type);
         foreach (var name in declaration.Names)
         {
+            // Skip redeclaration for parameters already defined
+            if (_parameters.ContainsKey(name))
+            {
+                continue;
+            }
             if (_locals.ContainsKey(name))
             {
                 throw new InvalidOperationException($"Variable '{name}' is already declared");
@@ -214,19 +330,97 @@ internal sealed class FortranCompiler
             return;
         }
 
-        for (int i = 0; i < print.Arguments.Count; i++)
-        {
-            var expressionType = EmitExpression(print.Arguments[i]);
-            _instructions!.Call(ResolveWrite(expressionType));
+        var firstType = EmitExpression(print.Arguments[0]);
+        ConvertTopOfStackToString(firstType);
 
-            if (i < print.Arguments.Count - 1)
-            {
-                _instructions!.Ldstr(" ");
-                _instructions!.Call(ResolveWrite(TypeReference.String));
-            }
+        if (print.Arguments.Count == 1)
+        {
+            _instructions!.Call(ResolveWriteLine(TypeReference.String));
+            return;
         }
 
-        _instructions!.Call(ResolveWriteLine(null));
+        EnsurePrintLocals();
+        _instructions!.Stloc(PrintBufferLocalName);
+
+        var concat = ResolveStringConcat();
+
+        for (int i = 1; i < print.Arguments.Count; i++)
+        {
+            // Append space separator
+            _instructions!.Ldloc(PrintBufferLocalName);
+            _instructions!.Ldstr(" ");
+            _instructions!.Call(concat);
+            _instructions!.Stloc(PrintBufferLocalName);
+
+            var argumentType = EmitExpression(print.Arguments[i]);
+            ConvertTopOfStackToString(argumentType);
+            _instructions!.Stloc(PrintTempLocalName);
+
+            _instructions!.Ldloc(PrintBufferLocalName);
+            _instructions!.Ldloc(PrintTempLocalName);
+            _instructions!.Call(concat);
+            _instructions!.Stloc(PrintBufferLocalName);
+        }
+
+        _instructions!.Ldloc(PrintBufferLocalName);
+        _instructions!.Call(ResolveWriteLine(TypeReference.String));
+    }
+
+    private void EmitWrite(FortranWriteStatement write)
+    {
+        // Reuse PRINT implementation semantics for WRITE(*,*) list-directed
+        EmitPrint(new FortranPrintStatement(write.Arguments));
+    }
+
+    private void EmitRead(FortranReadStatement read)
+    {
+        // READ(*,*) var1, var2 ... simple list-directed
+        var io = _options.IO;
+        foreach (var variable in read.TargetVariables)
+        {
+            var targetType = ResolveVariableType(variable);
+            if (_options.Debug)
+            {
+                System.Console.Error.WriteLine($"[FORTRAN] EmitRead variable={variable} resolvedType={targetType.GetQualifiedName()}");
+            }
+            // Call Console.ReadLine
+            _instructions!.Call(io.Console_ReadLine);
+
+            if (TypeEquals(targetType, TypeReference.Int32))
+            {
+                _instructions!.Call(io.Convert_ToInt32);
+            }
+            else if (TypeEquals(targetType, TypeReference.Float32))
+            {
+                // Parse as double then (future) convert; for now we rely on runtime tolerant assignment or later enhancement
+                _instructions!.Call(io.Convert_ToDouble);
+                // TODO: emit explicit ConvR4 when conversion instructions are expanded
+            }
+            else if (TypeEquals(targetType, TypeReference.Bool))
+            {
+                // Basic logical parsing: compare lowercase string with 'true'
+                var temp = AllocateTempLocal(TypeReference.String);
+                _instructions!.Stloc(temp);
+                _instructions!.Ldloc(temp);
+                _instructions!.Ldstr("true");
+                _instructions!.Ceq();
+                // Result is bool on stack
+            }
+            else if (TypeEquals(targetType, TypeReference.String))
+            {
+                // Already a string, nothing to do
+            }
+            else
+            {
+                throw new InvalidOperationException($"READ does not support variable type '{targetType.GetQualifiedName()}' yet");
+            }
+
+            _instructions!.Stloc(variable);
+            if (_options.Debug)
+            {
+                System.Console.Error.WriteLine($"[FORTRAN] Stored READ value into {variable}");
+            }
+        }
     }
 
     private void EmitCall(FortranCallStatement call)
@@ -234,10 +428,14 @@ internal sealed class FortranCompiler
         // First check if it's a user-defined subroutine
         if (_subroutines.TryGetValue(call.Name, out var subroutine))
         {
-            // Emit arguments
-            foreach (var arg in call.Arguments)
+            // Determine expected parameter types
+            var subParamTypes = GetSubroutineParameterTypes(subroutine);
+
+            // Emit arguments with expected types when available
+            for (int i = 0; i < call.Arguments.Count; i++)
             {
-                EmitExpression(arg);
+                var expected = i < subParamTypes.Count ? subParamTypes[i] : (TypeReference?)null;
+                EmitExpression(call.Arguments[i], expected);
             }
             
             // Call the subroutine as a static method
@@ -248,7 +446,7 @@ internal sealed class FortranCompiler
                 declaringType,
                 subroutine.Name,
                 TypeReference.Void,
-                call.Arguments.Select(_ => TypeReference.Void).ToList()
+                subParamTypes
             );
             _instructions!.Call(methodRef);
             return;
@@ -267,6 +465,42 @@ internal sealed class FortranCompiler
 
         EmitIntrinsicArguments(intrinsic, call.Arguments);
         EmitIntrinsicInvocation(intrinsic);
+    }
+
+    private List<TypeReference> GetSubroutineParameterTypes(FortranSubroutineDefinition subroutine)
+    {
+        var result = new List<TypeReference>();
+        var paramSet = new HashSet<string>(subroutine.Parameters, StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<string, TypeReference>(StringComparer.OrdinalIgnoreCase);
+        bool subImplicitNone = false;
+        foreach (var stmt in subroutine.Statements)
+        {
+            if (stmt is FortranImplicitNoneStatement)
+            {
+                subImplicitNone = true;
+            }
+            else if (stmt is FortranDeclarationStatement decl)
+            {
+                var t = MapType(decl.Type);
+                foreach (var n in decl.Names)
+                {
+                    if (paramSet.Contains(n))
+                    {
+                        map[n] = t;
+                    }
+                }
+            }
+        }
+
+        foreach (var p in subroutine.Parameters)
+        {
+            if (!map.TryGetValue(p, out var t))
+            {
+                t = subImplicitNone ? InferImplicitType(p) : InferImplicitType(p);
+            }
+            result.Add(t);
+        }
+        return result;
     }
 
     private TypeReference EmitExpression(FortranExpression expression, TypeReference? expectedType = null)
@@ -352,6 +586,34 @@ internal sealed class FortranCompiler
 
     private TypeReference EmitBinaryExpression(FortranBinaryExpression expression, TypeReference targetType)
     {
+        if (IsComparisonOperator(expression.Operator))
+        {
+            var operandType = ResolveComparisonOperandType(expression);
+            EmitExpressionWithTarget(expression.Left, operandType);
+            EmitExpressionWithTarget(expression.Right, operandType);
+
+            if (TypeEquals(operandType, TypeReference.String))
+            {
+                EmitStringComparison(expression.Operator);
+            }
+            else if (TypeEquals(operandType, TypeReference.Bool))
+            {
+                EmitBooleanComparison(expression.Operator);
+            }
+            else
+            {
+                EmitNumericComparison(expression.Operator);
+            }
+
+            EnsureAssignable(targetType, TypeReference.Bool);
+            return TypeReference.Bool;
+        }
+
+        if (IsLogicalOperator(expression.Operator))
+        {
+            throw new InvalidOperationException("Logical operators are not supported yet");
+        }
+
         if (!IsNumeric(targetType))
         {
             throw new InvalidOperationException("Arithmetic operations require numeric types");
@@ -410,6 +672,12 @@ internal sealed class FortranCompiler
                 }
 
                 return operandType;
+            case FortranUnaryOperator.Not:
+                var logicalType = EmitExpressionWithTarget(expression.Operand, TypeReference.Bool);
+                EnsureAssignable(TypeReference.Bool, logicalType);
+                _instructions!.LdcI4(0);
+                _instructions.Ceq();
+                return TypeReference.Bool;
             default:
                 throw new InvalidOperationException($"Unsupported unary operator: {expression.Operator}");
         }
@@ -444,14 +712,49 @@ internal sealed class FortranCompiler
             case FortranUnaryExpression unary:
                 return ResolveExpressionType(unary.Operand, expectedType);
             case FortranBinaryExpression binary:
-                var leftType = ResolveExpressionType(binary.Left, expectedType);
-                var rightType = ResolveExpressionType(binary.Right, expectedType);
-                var resolved = expectedType ?? PromoteNumericType(leftType, rightType);
-                if (!TypeEquals(leftType, resolved) || !TypeEquals(rightType, resolved))
-                {
-                    throw new InvalidOperationException("Mixed numeric types are not supported");
-                }
-                return resolved;
+                    if (IsLogicalOperator(binary.Operator))
+                    {
+                        ResolveExpressionType(binary.Left, TypeReference.Bool);
+                        ResolveExpressionType(binary.Right, TypeReference.Bool);
+                        return TypeReference.Bool;
+                    }
+
+                    if (IsComparisonOperator(binary.Operator))
+                    {
+                        var leftType = ResolveExpressionType(binary.Left, null);
+                        var rightType = ResolveExpressionType(binary.Right, null);
+
+                        if (IsNumeric(leftType) && IsNumeric(rightType))
+                        {
+                            PromoteNumericType(leftType, rightType);
+                            return TypeReference.Bool;
+                        }
+
+                        if (TypeEquals(leftType, TypeReference.Bool) && TypeEquals(rightType, TypeReference.Bool))
+                        {
+                            return TypeReference.Bool;
+                        }
+
+                        if (TypeEquals(leftType, TypeReference.String) && TypeEquals(rightType, TypeReference.String) &&
+                            (binary.Operator == FortranBinaryOperator.EqFortran ||
+                             binary.Operator == FortranBinaryOperator.EqModern ||
+                             binary.Operator == FortranBinaryOperator.NeFortran ||
+                             binary.Operator == FortranBinaryOperator.NeModern))
+                        {
+                            return TypeReference.Bool;
+                        }
+
+                        throw new InvalidOperationException("Unsupported comparison operand types");
+                    }
+
+                    var numericLeft = ResolveExpressionType(binary.Left, expectedType);
+                    var numericRight = ResolveExpressionType(binary.Right, expectedType);
+                    var resolved = expectedType ?? PromoteNumericType(numericLeft, numericRight);
+                    if (!TypeEquals(numericLeft, resolved) || !TypeEquals(numericRight, resolved))
+                    {
+                        throw new InvalidOperationException("Mixed numeric types are not supported");
+                    }
+                    return resolved;
             default:
                 throw new InvalidOperationException($"Cannot resolve type for expression {expression.GetType().Name}");
         }
@@ -550,10 +853,435 @@ internal sealed class FortranCompiler
         return new MethodReference(declaring, "WriteLine", TypeReference.Void, parameters);
     }
 
-    private MethodReference ResolveWrite(TypeReference argumentType)
+    private void ConvertTopOfStackToString(TypeReference type)
     {
-        var declaring = TypeReference.FromName("System.Console");
-        return new MethodReference(declaring, "Write", TypeReference.Void, new List<TypeReference> { argumentType });
+        if (TypeEquals(type, TypeReference.String))
+        {
+            return;
+        }
+
+        var convertType = TypeReference.FromName("System.Convert");
+        MethodReference method;
+
+        if (TypeEquals(type, TypeReference.Int32))
+        {
+            method = new MethodReference(convertType, "ToString", TypeReference.String, new List<TypeReference> { TypeReference.Int32 });
+        }
+        else if (TypeEquals(type, TypeReference.Float32))
+        {
+            method = new MethodReference(convertType, "ToString", TypeReference.String, new List<TypeReference> { TypeReference.Float32 });
+        }
+        else if (TypeEquals(type, TypeReference.Bool))
+        {
+            method = new MethodReference(convertType, "ToString", TypeReference.String, new List<TypeReference> { TypeReference.Bool });
+        }
+        else
+        {
+            throw new InvalidOperationException($"PRINT does not support values of type '{type.GetQualifiedName()}'");
+        }
+
+        _instructions!.Call(method);
+    }
+
+    private Condition EmitCondition(FortranExpression expression)
+    {
+        if (expression is FortranBinaryExpression binary && IsComparisonOperator(binary.Operator))
+        {
+            var operandType = ResolveComparisonOperandType(binary);
+            EmitExpressionWithTarget(binary.Left, operandType);
+            EmitExpressionWithTarget(binary.Right, operandType);
+            return Condition.Binary(MapComparisonOperator(binary.Operator));
+        }
+
+        var resultType = EmitExpression(expression, TypeReference.Bool);
+        EnsureAssignable(TypeReference.Bool, resultType);
+        return Condition.Stack();
+    }
+
+    private void EmitIf(FortranIfStatement ifStatement)
+    {
+        var condition = EmitCondition(ifStatement.Condition);
+
+        Action<InstructionBuilder>? elseBlock = null;
+        if (ifStatement.ElseIfParts.Count > 0 || ifStatement.ElseStatements != null)
+        {
+            elseBlock = builder => EmitElseChain(ifStatement.ElseIfParts, ifStatement.ElseStatements, 0, builder);
+        }
+
+        _instructions!.If(condition,
+            thenBuilder =>
+            {
+                var previous = _instructions;
+                _instructions = thenBuilder;
+                EmitStatementList(ifStatement.ThenStatements);
+                _instructions = previous;
+            },
+            elseBlock);
+    }
+
+    private void EmitElseChain(
+        IReadOnlyList<(FortranExpression Condition, IReadOnlyList<FortranStatement> Statements)> elseIfParts,
+        IReadOnlyList<FortranStatement>? elseStatements,
+        int index,
+        InstructionBuilder builder)
+    {
+        var previous = _instructions;
+        _instructions = builder;
+
+        if (index >= elseIfParts.Count)
+        {
+            if (elseStatements != null)
+            {
+                EmitStatementList(elseStatements);
+            }
+
+            _instructions = previous;
+            return;
+        }
+
+        var part = elseIfParts[index];
+        var condition = EmitCondition(part.Condition);
+        Action<InstructionBuilder>? elseBlock = null;
+        bool hasNext = index + 1 < elseIfParts.Count || elseStatements != null;
+        if (hasNext)
+        {
+            elseBlock = nextBuilder => EmitElseChain(elseIfParts, elseStatements, index + 1, nextBuilder);
+        }
+
+        _instructions!.If(condition,
+            thenBuilder =>
+            {
+                var previousThen = _instructions;
+                _instructions = thenBuilder;
+                EmitStatementList(part.Statements);
+                _instructions = previousThen;
+            },
+            elseBlock);
+
+        _instructions = previous;
+    }
+
+    private void EmitDoWhile(FortranDoWhileStatement doWhile)
+    {
+        var condition = EmitCondition(doWhile.Condition);
+        _instructions!.While(condition, body =>
+        {
+            var previous = _instructions;
+            _instructions = body;
+            EmitStatementList(doWhile.Statements);
+            _instructions = previous;
+        });
+    }
+
+    private void EmitDo(FortranDoStatement loop)
+    {
+        var loopType = ResolveVariableType(loop.LoopVariable);
+
+        var startType = EmitExpression(loop.Start, loopType);
+        EnsureAssignable(loopType, startType);
+        _instructions!.Stloc(loop.LoopVariable);
+
+        var endType = EmitExpression(loop.End, loopType);
+        EnsureAssignable(loopType, endType);
+        var endLocal = AllocateTempLocal(loopType);
+        _instructions!.Stloc(endLocal);
+
+        string stepLocal = AllocateTempLocal(loopType);
+        if (loop.Step != null)
+        {
+            var stepType = EmitExpression(loop.Step, loopType);
+            EnsureAssignable(loopType, stepType);
+        }
+        else
+        {
+            if (TypeEquals(loopType, TypeReference.Int32))
+            {
+                _instructions!.LdcI4(1);
+            }
+            else if (TypeEquals(loopType, TypeReference.Float32))
+            {
+                _instructions!.LdcR4(1.0f);
+            }
+            else
+            {
+                throw new InvalidOperationException("DO loops require numeric loop variables");
+            }
+        }
+
+        _instructions!.Stloc(stepLocal);
+
+        if (TryEvaluateNumericLiteral(loop.Step, out double stepValue))
+        {
+            var comparison = stepValue >= 0 ? ComparisonOp.LessOrEqual : ComparisonOp.GreaterOrEqual;
+            EmitDoLoopBody(loop, endLocal, stepLocal, comparison);
+            return;
+        }
+
+        EmitSignedDoLoop(loop, loopType, endLocal, stepLocal);
+    }
+
+    private void EmitSignedDoLoop(FortranDoStatement loop, TypeReference loopType, string endLocal, string stepLocal)
+    {
+        _instructions!.Ldloc(stepLocal);
+        if (TypeEquals(loopType, TypeReference.Int32))
+        {
+            _instructions!.LdcI4(0);
+        }
+        else if (TypeEquals(loopType, TypeReference.Float32))
+        {
+            _instructions!.LdcR4(0.0f);
+        }
+        else
+        {
+            throw new InvalidOperationException("DO loops require numeric loop variables");
+        }
+
+        _instructions!.If(Condition.Binary(ComparisonOp.GreaterOrEqual),
+            thenBuilder =>
+            {
+                var previous = _instructions;
+                _instructions = thenBuilder;
+                EmitDoLoopBody(loop, endLocal, stepLocal, ComparisonOp.LessOrEqual);
+                _instructions = previous;
+            },
+            elseBuilder =>
+            {
+                var previous = _instructions;
+                _instructions = elseBuilder;
+                EmitDoLoopBody(loop, endLocal, stepLocal, ComparisonOp.GreaterOrEqual);
+                _instructions = previous;
+            });
+    }
+
+    private void EmitDoLoopBody(FortranDoStatement loop, string endLocal, string stepLocal, ComparisonOp comparison)
+    {
+        _instructions!.Ldloc(loop.LoopVariable);
+        _instructions!.Ldloc(endLocal);
+
+        _instructions!.While(Condition.Binary(comparison), body =>
+        {
+            var previous = _instructions;
+            _instructions = body;
+            EmitStatementList(loop.Statements);
+            EmitLoopIncrement(loop.LoopVariable, stepLocal);
+            _instructions = previous;
+        });
+    }
+
+    private void EmitLoopIncrement(string loopVariable, string stepLocal)
+    {
+        _instructions!.Ldloc(loopVariable);
+        _instructions!.Ldloc(stepLocal);
+        _instructions!.Add();
+        _instructions!.Stloc(loopVariable);
+    }
+
+    private void EmitStatementList(IEnumerable<FortranStatement> statements)
+    {
+        foreach (var statement in statements)
+        {
+            EmitStatement(statement);
+        }
+    }
+
+    private string AllocateTempLocal(TypeReference type)
+    {
+        string name;
+        do
+        {
+            name = $"__tmp{_tempLocalCounter++}";
+        }
+        while (_locals.ContainsKey(name));
+
+        _locals[name] = type;
+        _methodBuilder!.Local(name, type);
+        return name;
+    }
+
+    private bool TryEvaluateNumericLiteral(FortranExpression? expression, out double value)
+    {
+        switch (expression)
+        {
+            case null:
+                value = 1;
+                return true;
+            case FortranIntegerLiteralExpression integerLiteral:
+                value = integerLiteral.Value;
+                return true;
+            case FortranRealLiteralExpression realLiteral:
+                value = realLiteral.Value;
+                return true;
+            case FortranUnaryExpression unary when unary.Operator == FortranUnaryOperator.Minus:
+                if (TryEvaluateNumericLiteral(unary.Operand, out value))
+                {
+                    value = -value;
+                    return true;
+                }
+                break;
+            case FortranUnaryExpression unaryPlus when unaryPlus.Operator == FortranUnaryOperator.Plus:
+                return TryEvaluateNumericLiteral(unaryPlus.Operand, out value);
+        }
+
+        value = 0;
+        return false;
+    }
+
+    private TypeReference ResolveComparisonOperandType(FortranBinaryExpression expression)
+    {
+        var leftType = ResolveExpressionType(expression.Left, null);
+        var rightType = ResolveExpressionType(expression.Right, null);
+
+        if (IsNumeric(leftType) && IsNumeric(rightType))
+        {
+            return PromoteNumericType(leftType, rightType);
+        }
+
+        if (TypeEquals(leftType, TypeReference.Bool) && TypeEquals(rightType, TypeReference.Bool))
+        {
+            return TypeReference.Bool;
+        }
+
+        if (TypeEquals(leftType, TypeReference.String) && TypeEquals(rightType, TypeReference.String) &&
+            IsEqualityOperator(expression.Operator))
+        {
+            return TypeReference.String;
+        }
+
+        throw new InvalidOperationException("Unsupported operands for comparison");
+    }
+
+    private void EmitNumericComparison(FortranBinaryOperator op)
+    {
+        switch (op)
+        {
+            case FortranBinaryOperator.EqFortran:
+            case FortranBinaryOperator.EqModern:
+                _instructions!.Ceq();
+                break;
+            case FortranBinaryOperator.NeFortran:
+            case FortranBinaryOperator.NeModern:
+                _instructions!.Ceq();
+                _instructions!.LdcI4(0);
+                _instructions.Ceq();
+                break;
+            case FortranBinaryOperator.LtFortran:
+            case FortranBinaryOperator.LtModern:
+                _instructions!.Clt();
+                break;
+            case FortranBinaryOperator.LeFortran:
+            case FortranBinaryOperator.LeModern:
+                _instructions!.Cgt();
+                _instructions!.LdcI4(0);
+                _instructions.Ceq();
+                break;
+            case FortranBinaryOperator.GtFortran:
+            case FortranBinaryOperator.GtModern:
+                _instructions!.Cgt();
+                break;
+            case FortranBinaryOperator.GeFortran:
+            case FortranBinaryOperator.GeModern:
+                _instructions!.Clt();
+                _instructions!.LdcI4(0);
+                _instructions.Ceq();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported numeric comparison operator: {op}");
+        }
+    }
+
+    private void EmitBooleanComparison(FortranBinaryOperator op)
+    {
+        switch (op)
+        {
+            case FortranBinaryOperator.EqFortran:
+            case FortranBinaryOperator.EqModern:
+                _instructions!.Ceq();
+                break;
+            case FortranBinaryOperator.NeFortran:
+            case FortranBinaryOperator.NeModern:
+                _instructions!.Ceq();
+                _instructions!.LdcI4(0);
+                _instructions.Ceq();
+                break;
+            default:
+                throw new InvalidOperationException("Logical comparisons only support equality checks");
+        }
+    }
+
+    private void EmitStringComparison(FortranBinaryOperator op)
+    {
+        var equalsMethod = new MethodReference(
+            TypeReference.String,
+            "Equals",
+            TypeReference.Bool,
+            new List<TypeReference> { TypeReference.String, TypeReference.String });
+
+        _instructions!.Call(equalsMethod);
+
+        if (op == FortranBinaryOperator.NeFortran || op == FortranBinaryOperator.NeModern)
+        {
+            _instructions!.LdcI4(0);
+            _instructions.Ceq();
+        }
+    }
+
+    private static bool IsComparisonOperator(FortranBinaryOperator op)
+    {
+        return op == FortranBinaryOperator.EqFortran || op == FortranBinaryOperator.EqModern ||
+               op == FortranBinaryOperator.NeFortran || op == FortranBinaryOperator.NeModern ||
+               op == FortranBinaryOperator.LtFortran || op == FortranBinaryOperator.LtModern ||
+               op == FortranBinaryOperator.LeFortran || op == FortranBinaryOperator.LeModern ||
+               op == FortranBinaryOperator.GtFortran || op == FortranBinaryOperator.GtModern ||
+               op == FortranBinaryOperator.GeFortran || op == FortranBinaryOperator.GeModern;
+    }
+
+    private static bool IsLogicalOperator(FortranBinaryOperator op)
+    {
+        return op == FortranBinaryOperator.And || op == FortranBinaryOperator.Or;
+    }
+
+    private static bool IsEqualityOperator(FortranBinaryOperator op)
+    {
+        return op == FortranBinaryOperator.EqFortran || op == FortranBinaryOperator.EqModern ||
+               op == FortranBinaryOperator.NeFortran || op == FortranBinaryOperator.NeModern;
+    }
+
+    private static ComparisonOp MapComparisonOperator(FortranBinaryOperator op)
+    {
+        return op switch
+        {
+            FortranBinaryOperator.EqFortran or FortranBinaryOperator.EqModern => ComparisonOp.Equal,
+            FortranBinaryOperator.NeFortran or FortranBinaryOperator.NeModern => ComparisonOp.NotEqual,
+            FortranBinaryOperator.LtFortran or FortranBinaryOperator.LtModern => ComparisonOp.Less,
+            FortranBinaryOperator.LeFortran or FortranBinaryOperator.LeModern => ComparisonOp.LessOrEqual,
+            FortranBinaryOperator.GtFortran or FortranBinaryOperator.GtModern => ComparisonOp.Greater,
+            FortranBinaryOperator.GeFortran or FortranBinaryOperator.GeModern => ComparisonOp.GreaterOrEqual,
+            _ => throw new InvalidOperationException($"Unsupported comparison operator: {op}")
+        };
+    }
+
+    private MethodReference ResolveStringConcat()
+    {
+        return new MethodReference(TypeReference.String, "Concat", TypeReference.String,
+            new List<TypeReference> { TypeReference.String, TypeReference.String });
+    }
+
+    private const string PrintBufferLocalName = "__print_buffer";
+    private const string PrintTempLocalName = "__print_temp";
+
+    private void EnsurePrintLocals()
+    {
+        if (!_printBufferDeclared)
+        {
+            _methodBuilder!.Local(PrintBufferLocalName, TypeReference.String);
+            _printBufferDeclared = true;
+        }
+
+        if (!_printTempDeclared)
+        {
+            _methodBuilder!.Local(PrintTempLocalName, TypeReference.String);
+            _printTempDeclared = true;
+        }
     }
 
     private FortranIntrinsic ResolveIntrinsic(string name)

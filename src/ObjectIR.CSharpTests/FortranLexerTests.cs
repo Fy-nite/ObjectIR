@@ -382,8 +382,8 @@ public class FortranLexerTests
             "PROGRAM test END PROGRAM",
             FortranTokenKind.KeywordProgram,
             FortranTokenKind.Identifier,
-            FortranTokenKind.KeywordEnd,
-            FortranTokenKind.KeywordProgram
+            // Compound END PROGRAM now lexed as single token
+            FortranTokenKind.KeywordEndProgram
         );
     }
 
@@ -399,8 +399,8 @@ public class FortranLexerTests
             FortranTokenKind.Comma,
             FortranTokenKind.Identifier,
             FortranTokenKind.RParen,
-            FortranTokenKind.KeywordEnd,
-            FortranTokenKind.KeywordSubroutine
+            // Compound END SUBROUTINE now lexed as single token
+            FortranTokenKind.KeywordEndSubroutine
         );
     }
 

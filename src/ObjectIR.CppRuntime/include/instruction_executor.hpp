@@ -59,6 +59,12 @@ private:
     // Helper to convert values to double for arithmetic
     static double ValueToDouble(const Value& v);
     static int64_t ValueToInt64(const Value& v);
+    static bool EvaluateCondition(
+        const Instruction::ConditionData& condition,
+        ExecutionContext* context,
+        VirtualMachine* vm
+    );
+    static bool ValueToBool(const Value& value);
 };
 
 } // namespace ObjectIR

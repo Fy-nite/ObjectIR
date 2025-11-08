@@ -358,6 +358,7 @@ public sealed class InstructionBuilder
     public InstructionBuilder Dup() { _instructions.EmitDup(); return this; }
     public InstructionBuilder Pop() { _instructions.EmitPop(); return this; }
 
+
     // Control flow
     public InstructionBuilder Ret() { _instructions.EmitReturn(); return this; }
 

@@ -72,6 +72,33 @@ internal sealed class FortranPrintStatement : FortranStatement
     }
 }
 
+/// <summary>
+/// READ(*,*) var1, var2, ... (list-directed input)
+/// Currently we only support the simple list-directed form with unit=* and format=*.
+/// </summary>
+internal sealed class FortranReadStatement : FortranStatement
+{
+    public IReadOnlyList<string> TargetVariables { get; }
+
+    public FortranReadStatement(IReadOnlyList<string> targetVariables)
+    {
+        TargetVariables = targetVariables;
+    }
+}
+
+/// <summary>
+/// WRITE(*,*) expr1, expr2, ... (list-directed output) – treated like PRINT *, exprs
+/// </summary>
+internal sealed class FortranWriteStatement : FortranStatement
+{
+    public IReadOnlyList<FortranExpression> Arguments { get; }
+
+    public FortranWriteStatement(IReadOnlyList<FortranExpression> arguments)
+    {
+        Arguments = arguments;
+    }
+}
+
 internal sealed class FortranCallStatement : FortranStatement
 {
     public string Name { get; }

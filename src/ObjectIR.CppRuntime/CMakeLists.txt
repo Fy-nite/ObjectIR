@@ -17,6 +17,7 @@ add_library(objectir_runtime SHARED
     src/objectir_runtime.cpp
     src/ir_loader.cpp
     src/instruction_executor.cpp
+    src/stdlib.cpp
     src/runtime_c_api.cpp
 )
 
