@@ -58,6 +58,12 @@ public static class NativeRuntime
     public static extern IntPtr LoadModuleFromString(IntPtr vm, [MarshalAs(UnmanagedType.LPStr)] string jsonString);
 
     /// <summary>
+    /// Load an ObjectIR FOB module from file and return entry point information
+    /// </summary>
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern IntPtr LoadFOBModuleFromFile(IntPtr vm, [MarshalAs(UnmanagedType.LPStr)] string filePath, out IntPtr entryClassName, out IntPtr entryMethodName);
+
+    /// <summary>
     /// Execute a method on an object
     /// </summary>
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -166,6 +172,30 @@ public class RuntimeWrapper : IDisposable
 
         IntPtr result = NativeRuntime.LoadModuleFromFile(_vmHandle, filePath);
         CheckError(result);
+    }
+
+    /// <summary>
+    /// Load a FOB module from file and return entry point information
+    /// </summary>
+    public (string entryClassName, string entryMethodName) LoadFOBModuleFromFile(string filePath)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(RuntimeWrapper));
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException($"FOB file not found: {filePath}");
+
+        IntPtr result = NativeRuntime.LoadFOBModuleFromFile(_vmHandle, filePath, out IntPtr entryClassNamePtr, out IntPtr entryMethodNamePtr);
+        CheckError(result);
+
+        string entryClassName = Marshal.PtrToStringAnsi(entryClassNamePtr) ?? "";
+        string entryMethodName = Marshal.PtrToStringAnsi(entryMethodNamePtr) ?? "";
+
+        // Free the strings
+        if (entryClassNamePtr != IntPtr.Zero) NativeRuntime.FreeString(entryClassNamePtr);
+        if (entryMethodNamePtr != IntPtr.Zero) NativeRuntime.FreeString(entryMethodNamePtr);
+
+        return (entryClassName, entryMethodName);
     }
 
     /// <summary>

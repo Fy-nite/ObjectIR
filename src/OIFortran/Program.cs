@@ -11,7 +11,7 @@ if (args.Length == 0)
 
 string? inputPath = null;
 string? outputPath = null;
-string format = "text";
+string format = "fob";
 string? intrinsicsPath = null;
 bool debug = false;
 
@@ -172,5 +172,5 @@ catch (Exception ex)
 
 static void PrintUsage()
 {
-	Console.WriteLine("Usage: objectir-fortran <input-file> [--out <path>] [--format text|json|fob|oir|yaml|markdown] [--intrinsics <config.json>]");
+	Console.WriteLine("Usage: oifortran <filename> [-o <output-file>] [--format text|json|fob|oir|yaml|markdown] [--intrinsics <config.json>]");
 }

@@ -14,19 +14,28 @@ namespace ObjectIR
     // ============================================================================
 
     /// Loads ObjectIR modules from FOB binary format
-    class FOBLoader
+    class OBJECTIR_API FOBLoader
     {
     public:
-        /// Load a module from a FOB file path
-        static std::shared_ptr<VirtualMachine> LoadFromFile(const std::string &filePath);
+    /// Result of loading a FOB module
+    struct FOBLoadResult {
+        std::shared_ptr<VirtualMachine> vm;
+        uint16_t entryTypeIndex;
+        uint16_t entryMethodIndex;
+        std::vector<std::string> classNames;
+        std::vector<std::vector<std::string>> methodNames; // methodNames[classIndex][methodIndex]
+    };
+
+    /// Load a module from a FOB file path
+    static FOBLoadResult LoadFromFile(const std::string &filePath);
 
     /// Load a module from FOB binary data
-    static std::shared_ptr<VirtualMachine> LoadFromData(const std::vector<uint8_t> &data);
+    static FOBLoadResult LoadFromData(const std::vector<uint8_t> &data);
 
-private:
-    FOBLoader() = default;
+    // ============================================================================
+    // FOB Format Structures
+    // ============================================================================
 
-    // FOB format structures
     struct FOBHeader {
         char magic[3];          // "FOB"
         uint8_t forkNameLength;
@@ -41,15 +50,6 @@ private:
         uint32_t size;
     };
 
-    // Forward declarations for nested structs
-    struct FOBFieldDefinition;
-    struct FOBMethodDefinition;
-    struct FOBParameterDefinition;
-    struct FOBLocalDefinition;
-    struct FOBInstruction;
-    struct FOBConstant;
-
-    // ObjectIR FOB section data
     struct FOBFieldDefinition {
         uint32_t nameIndex;
         uint32_t typeIndex;
@@ -67,17 +67,6 @@ private:
         uint32_t typeIndex;
     };
 
-    struct FOBInstruction {
-        uint8_t opcode;
-        uint8_t operandCount;
-        std::vector<uint8_t> operands;
-    };
-
-    struct FOBConstant {
-        uint8_t type;
-        std::vector<uint8_t> value;
-    };
-
     struct FOBMethodDefinition {
         uint32_t nameIndex;
         uint32_t returnTypeIndex;
@@ -89,16 +78,34 @@ private:
     };
 
     struct FOBTypeDefinition {
-        uint8_t kind;           // 0x01 = Class, 0x02 = Interface
+        uint8_t kind;
         uint32_t nameIndex;
         uint32_t namespaceIndex;
-        uint8_t access;         // 0x01 = Public, etc.
-        uint8_t flags;          // Bit flags
-        uint32_t baseTypeIndex; // 0xFFFFFFFF for none
+        uint8_t access;
+        uint8_t flags;
+        uint32_t baseTypeIndex;
         std::vector<uint32_t> interfaceIndices;
         std::vector<FOBFieldDefinition> fields;
         std::vector<FOBMethodDefinition> methods;
-    };        // Parsing methods
+    };
+
+    struct FOBInstruction {
+        uint8_t opcode;
+        uint8_t operandCount;
+        std::vector<uint8_t> operands;
+    };
+
+    struct FOBConstant {
+        uint8_t type;
+        std::vector<uint8_t> value;
+    };
+
+    struct BuildTypeResult {
+        std::string className;
+        std::vector<std::string> methodNames;
+    };
+
+    private:        // Parsing methods
         static FOBHeader ParseHeader(std::istream &stream);
         static std::vector<SectionHeader> ParseSectionHeaders(std::istream &stream, uint32_t fileSize);
         static std::vector<std::string> ParseStringsSection(std::istream &stream, const SectionHeader &section);
@@ -114,14 +121,14 @@ private:
         static std::vector<uint8_t> ReadBytes(std::istream &stream, uint32_t count);
 
         // Construction methods
-        static std::shared_ptr<VirtualMachine> BuildVirtualMachine(
+        static FOBLoadResult BuildVirtualMachine(
             const FOBHeader &header,
             const std::vector<std::string> &strings,
             const std::vector<FOBTypeDefinition> &types,
             const std::vector<FOBInstruction> &instructions,
             const std::vector<FOBConstant> &constants);
 
-        static void BuildType(
+        static BuildTypeResult BuildType(
             std::shared_ptr<VirtualMachine> vm,
             const FOBTypeDefinition &typeDef,
             const std::vector<std::string> &strings);

@@ -3,11 +3,17 @@
 #include "stdlib.hpp"
 #include <algorithm>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 
 namespace ObjectIR {
 
-std::shared_ptr<VirtualMachine> FOBLoader::LoadFromFile(const std::string& filePath) {
+struct BuildTypeResult {
+    std::string className;
+    std::vector<std::string> methodNames;
+};
+
+FOBLoader::FOBLoadResult FOBLoader::LoadFromFile(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open FOB file: " + filePath);
@@ -25,7 +31,7 @@ std::shared_ptr<VirtualMachine> FOBLoader::LoadFromFile(const std::string& fileP
     return LoadFromData(data);
 }
 
-std::shared_ptr<VirtualMachine> FOBLoader::LoadFromData(const std::vector<uint8_t>& data) {
+FOBLoader::FOBLoadResult FOBLoader::LoadFromData(const std::vector<uint8_t>& data) {
     std::istringstream stream(std::string(data.begin(), data.end()), std::ios::binary);
 
     // Parse FOB header
@@ -41,6 +47,8 @@ std::shared_ptr<VirtualMachine> FOBLoader::LoadFromData(const std::vector<uint8_
     std::vector<FOBConstant> constants;
 
     for (const auto& section : sections) {
+        // Clear any error bits before seeking
+        stream.clear();
         stream.seekg(section.startAddr, std::ios::beg);
 
         if (section.name == ".strings") {
@@ -106,11 +114,13 @@ std::vector<FOBLoader::SectionHeader> FOBLoader::ParseSectionHeaders(std::istrea
 
         // Read section size
         section.size = ReadU32(stream);
+        
+        // Record the start address BEFORE skipping
         section.startAddr = static_cast<uint32_t>(stream.tellg());
 
         sections.push_back(section);
 
-        // Skip to next section
+        // Skip to next section header
         stream.seekg(section.size, std::ios::cur);
     }
 
@@ -342,7 +352,7 @@ std::vector<uint8_t> FOBLoader::ReadBytes(std::istream &stream, uint32_t count) 
 // Construction Methods
 // ============================================================================
 
-std::shared_ptr<VirtualMachine> FOBLoader::BuildVirtualMachine(
+FOBLoader::FOBLoadResult FOBLoader::BuildVirtualMachine(
     const FOBHeader &header,
     const std::vector<std::string> &strings,
     const std::vector<FOBTypeDefinition> &types,
@@ -354,15 +364,53 @@ std::shared_ptr<VirtualMachine> FOBLoader::BuildVirtualMachine(
     // Register standard library types and methods
     RegisterStandardLibrary(vm);
 
-    // Build types
+    // Build types and track names
+    std::vector<std::string> classNames;
+    std::vector<std::vector<std::string>> methodNames;
+
     for (const auto& typeDef : types) {
-        BuildType(vm, typeDef, strings);
+        auto result = BuildType(vm, typeDef, strings);
+        classNames.push_back(result.className);
+        methodNames.push_back(result.methodNames);
     }
 
-    return vm;
+    // Extract entry point indices from header
+    // Entry point is encoded as (type_index << 16) | method_index
+    uint32_t entryPoint = header.entryPoint;
+    uint16_t entryTypeIndex = (entryPoint >> 16) & 0xFFFF;
+    uint16_t entryMethodIndex = entryPoint & 0xFFFF;
+
+    // Validate header-provided entry point. If invalid, attempt automatic Fortran-style fallback.
+    // Fortran sources produce exactly one program; pick the first type containing a method named "Main".
+    bool headerEntryValid = entryPoint != 0xFFFFFFFFu &&
+        entryTypeIndex < classNames.size() &&
+        entryTypeIndex < methodNames.size() &&
+        entryMethodIndex < methodNames[entryTypeIndex].size();
+
+    if (!headerEntryValid) {
+        // Fallback scan: locate a method named "Main" (case-sensitive) on any loaded class.
+        for (size_t t = 0; t < methodNames.size(); ++t) {
+            const auto &mNames = methodNames[t];
+            for (size_t m = 0; m < mNames.size(); ++m) {
+                if (mNames[m] == "Main") {
+                    entryTypeIndex = static_cast<uint16_t>(t);
+                    entryMethodIndex = static_cast<uint16_t>(m);
+                    headerEntryValid = true;
+                    // Encode synthesized entryPoint for downstream consumers (optional).
+                    entryPoint = (static_cast<uint32_t>(entryTypeIndex) << 16) | static_cast<uint32_t>(entryMethodIndex);
+                    break;
+                }
+            }
+            if (headerEntryValid) break;
+        }
+    }
+
+    // NOTE: We intentionally return even if still invalid; runtime layer can report missing entry point.
+
+    return {vm, entryTypeIndex, entryMethodIndex, classNames, methodNames};
 }
 
-void FOBLoader::BuildType(
+FOBLoader::BuildTypeResult FOBLoader::BuildType(
     std::shared_ptr<VirtualMachine> vm,
     const FOBTypeDefinition &typeDef,
     const std::vector<std::string> &strings) {
@@ -385,11 +433,19 @@ void FOBLoader::BuildType(
         classRef->AddField(fieldRef);
     }
     
-    // Add methods
+    // Add methods and collect method names
+    std::vector<std::string> methodNames;
     for (const auto& method : typeDef.methods) {
-        BuildMethod(classRef, method, strings, std::vector<FOBInstruction>()); // TODO: Pass instructions
+        auto methodRef = BuildMethod(classRef, method, strings, std::vector<FOBInstruction>()); // TODO: Pass instructions
+        methodNames.push_back(methodRef->GetName());
     }
-}MethodRef FOBLoader::BuildMethod(
+
+    // Return qualified class name (namespace.typename)
+    std::string qualifiedName = namespaceName.empty() ? typeName : namespaceName + "." + typeName;
+    return {qualifiedName, methodNames};
+}
+
+MethodRef FOBLoader::BuildMethod(
     ClassRef classRef,
     const FOBMethodDefinition &methodDef,
     const std::vector<std::string> &strings,
@@ -431,4 +487,6 @@ TypeReference FOBLoader::ParseTypeReference(
     // For now, return a placeholder type reference
     // TODO: Implement proper type reference parsing
     return TypeReference::Void();
-}} // namespace ObjectIR
+}
+
+} // namespace ObjectIR

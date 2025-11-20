@@ -13,6 +13,16 @@
 #include <cstdint>
 #include <any>
 
+#if defined(_WIN32)
+  #if defined(objectir_runtime_EXPORTS)
+    #define OBJECTIR_API __declspec(dllexport)
+  #else
+    #define OBJECTIR_API __declspec(dllimport)
+  #endif
+#else
+  #define OBJECTIR_API
+#endif
+
 namespace ObjectIR
 {
 
@@ -50,7 +60,7 @@ namespace ObjectIR
     };
 
     /// Represents a type reference with support for generics
-    class TypeReference
+    class OBJECTIR_API TypeReference
     {
     public:
         TypeReference() = default;
@@ -87,7 +97,7 @@ namespace ObjectIR
     // ============================================================================
 
     /// Represents a runtime value that can be stored on the stack
-    class Value
+    class OBJECTIR_API Value
     {
     public:
         Value();
@@ -165,7 +175,7 @@ namespace ObjectIR {
     // ============================================================================
 
     /// Base class for all runtime objects
-    class Object : public std::enable_shared_from_this<Object>
+    class OBJECTIR_API Object : public std::enable_shared_from_this<Object>
     {
     public:
         Object() = default;
@@ -200,7 +210,7 @@ namespace ObjectIR {
     };
 
     /// Array class for runtime arrays
-    class Array : public Object
+    class OBJECTIR_API Array : public Object
     {
     public:
         Array(TypeReference elementType, int32_t length)
@@ -229,7 +239,7 @@ namespace ObjectIR {
     };
 
     /// Represents a field definition within a class
-    class Field
+    class OBJECTIR_API Field
     {
     public:
         Field(std::string name, TypeReference type)
@@ -251,7 +261,7 @@ namespace ObjectIR {
     using NativeMethodImpl = std::function<Value(ObjectRef thisPtr, const std::vector<Value> &, VirtualMachine *)>;
 
     /// Represents a method definition
-    class Method
+    class OBJECTIR_API Method
     {
     public:
         Method(std::string name, TypeReference returnType, bool isStatic = false, bool isVirtual = false)
@@ -288,7 +298,7 @@ namespace ObjectIR {
     // Class Definition - Represents a class at runtime
     // ============================================================================
 
-    class Class : public std::enable_shared_from_this<Class>
+    class OBJECTIR_API Class : public std::enable_shared_from_this<Class>
     {
     public:
         explicit Class(std::string name);
@@ -340,7 +350,7 @@ namespace ObjectIR {
     // ============================================================================
 
     /// Base class for generic list
-    class ListBase : public Object
+    class OBJECTIR_API ListBase : public Object
     {
     public:
         virtual ~ListBase() = default;
@@ -420,7 +430,7 @@ namespace ObjectIR {
     // Execution Context - Runtime state for method execution
     // ============================================================================
 
-    class ExecutionContext
+    class OBJECTIR_API ExecutionContext
     {
     public:
         explicit ExecutionContext(MethodRef method);
@@ -458,7 +468,7 @@ namespace ObjectIR {
     // Virtual Machine - Runtime engine
     // ============================================================================
 
-    class VirtualMachine
+    class OBJECTIR_API VirtualMachine
     {
     public:
         VirtualMachine();
@@ -492,7 +502,7 @@ namespace ObjectIR {
     // Builder API - Fluent interface for constructing runtime objects
     // ============================================================================
 
-    class RuntimeBuilder
+    class OBJECTIR_API RuntimeBuilder
     {
     public:
         RuntimeBuilder() : _vm(std::make_unique<VirtualMachine>()) {}

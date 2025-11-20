@@ -10,7 +10,8 @@ namespace ObjectIR {
 std::shared_ptr<VirtualMachine> IRLoader::LoadFromFile(const std::string& filePath) {
     // Auto-detect format
     if (IsFOBFormat(filePath)) {
-        return FOBLoader::LoadFromFile(filePath);
+        auto result = FOBLoader::LoadFromFile(filePath);
+        return result.vm;
     } else {
         // Assume JSON format
         std::ifstream file(filePath);
@@ -34,7 +35,8 @@ std::shared_ptr<VirtualMachine> IRLoader::LoadFromString(const std::string& json
 }
 
 std::shared_ptr<VirtualMachine> IRLoader::LoadFromFOBData(const std::vector<uint8_t>& data) {
-    return FOBLoader::LoadFromData(data);
+    auto result = FOBLoader::LoadFromData(data);
+    return result.vm;
 }
 
 bool IRLoader::IsFOBFormat(const std::string& filePath) {

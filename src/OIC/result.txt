@@ -1,0 +1,8 @@
+Module: CProgram
+Version: 1.0.0
+
+Types (1):
+  class Program
+    Methods:
+      Public static int32 add(int32 a, int32 b) [5 instructions]
+      Public static int32 multiply(int32 x, int32 y) [5 instructions]

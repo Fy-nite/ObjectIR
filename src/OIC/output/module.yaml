@@ -1,0 +1,19 @@
+module: CProgram
+version: 1.0.0
+types:
+  - name: Program
+    kind: Class
+    namespace: null
+    access: Public
+    abstract: False
+sealed: False
+    methods:
+      - name: add
+        returnType: int32
+        parameters: 2
+      - name: multiply
+        returnType: int32
+        parameters: 2
+      - name: main
+        returnType: int32
+        parameters: 0

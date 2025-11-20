@@ -8,11 +8,13 @@ int main() {
         std::cout << "=== FOB Loader Test ===" << std::endl;
 
         // Try to load the test.fob file from OIFortran
-        auto vm = FOBLoader::LoadFromFile("/run/media/charlie/the cat storage v2/ObjectIR/src/OIFortran/test.fob");
+        auto result = FOBLoader::LoadFromFile("/run/media/charlie/the cat storage v2/ObjectIR/src/OIFortran/test.fob");
+        auto vm = result.vm;
 
         if (vm) {
             std::cout << "✓ FOB loader loaded test.fob successfully!" << std::endl;
             std::cout << "✓ Standard library registered" << std::endl;
+            std::cout << "✓ Entry point: type " << result.entryTypeIndex << ", method " << result.entryMethodIndex << std::endl;
 
             // Check if Console class is available
             auto consoleClass = vm->GetClass("System.Console");

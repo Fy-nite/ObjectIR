@@ -653,16 +653,70 @@ Name = property.Name,
         long fileSizePos = writer.BaseStream.Position;
         writer.Write(0u); // fileSize
 
-        // Entry point (index of main method, -1 for now)
-        writer.Write(0xFFFFFFFFu); // entryPoint
+        // Entry point - try to find from metadata, otherwise use -1
+        uint entryPoint = CalculateEntryPoint(_module, types, strings);
+        writer.Write(entryPoint);
 
         return fileSizePos;
     }
 
+    private uint CalculateEntryPoint(Module module, TypeData[] types, List<string> strings)
+    {
+        // Try to get entry point from metadata
+        if (module.Metadata.TryGetValue("EntryPoint", out var entryMetadata) && entryMetadata is string entryString)
+        {
+            Console.WriteLine($"DEBUG: EntryPoint metadata: {entryString}");
+            // Parse entry point in format "ClassName.MethodName"
+            int dotIndex = entryString.LastIndexOf('.');
+            if (dotIndex > 0)
+            {
+                string className = entryString[..dotIndex];
+                string methodName = entryString[(dotIndex + 1)..];
+                Console.WriteLine($"DEBUG: Looking for class '{className}', method '{methodName}'");
+
+                // Find type index
+                for (int typeIndex = 0; typeIndex < types.Length; typeIndex++)
+                {
+                    var type = types[typeIndex];
+                    string qualifiedName = string.IsNullOrEmpty(type.Namespace) ? type.Name : $"{type.Namespace}.{type.Name}";
+                    Console.WriteLine($"DEBUG: Checking type {typeIndex}: qualifiedName='{qualifiedName}', Name='{type.Name}', Namespace='{type.Namespace}'");
+                    if (qualifiedName == className)
+                    {
+                        Console.WriteLine($"DEBUG: Found matching type at index {typeIndex}");
+                        // Find method index within this type
+                        if (type.Methods != null)
+                        {
+                            for (int methodIndex = 0; methodIndex < type.Methods.Length; methodIndex++)
+                            {
+                                var method = type.Methods[methodIndex];
+                                Console.WriteLine($"DEBUG: Checking method {methodIndex}: Name='{method.Name}'");
+                                if (method.Name == methodName)
+                                {
+                                    Console.WriteLine($"DEBUG: Found matching method at index {methodIndex}");
+                                    // Entry point is encoded as (type_index << 16) | method_index
+                                    return (uint)((typeIndex << 16) | methodIndex);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // No valid entry point found
+        Console.WriteLine("DEBUG: No valid entry point found");
+        return 0xFFFFFFFFu;
+    }
+
     private void WriteStringsSection(BinaryWriter writer, List<string> strings)
     {
-        // Section header
-        WriteSectionHeader(writer, ".strings", 0); // offset placeholder
+        // Section name and null terminator
+        writer.Write(Encoding.UTF8.GetBytes(".strings"));
+        writer.Write((byte)0);
+
+        // Size placeholder position
+        long sizePos = writer.BaseStream.Position;
+        writer.Write((uint)0); // Placeholder
 
         long sectionStart = writer.BaseStream.Position;
 
@@ -679,13 +733,18 @@ Name = property.Name,
 
         // Update section size
         long sectionEnd = writer.BaseStream.Position;
-        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+        UpdateSectionSize(writer, sizePos, (uint)(sectionEnd - sectionStart));
     }
 
     private void WriteTypesSection(BinaryWriter writer, TypeData[] types, Dictionary<string, int> stringIndices, Dictionary<TypeData, int> typeIndices)
     {
-        // Section header
-        WriteSectionHeader(writer, ".types", 0); // offset placeholder
+        // Section name and null terminator
+        writer.Write(Encoding.UTF8.GetBytes(".types"));
+        writer.Write((byte)0);
+
+        // Size placeholder position
+        long sizePos = writer.BaseStream.Position;
+        writer.Write((uint)0); // Placeholder
 
         long sectionStart = writer.BaseStream.Position;
 
@@ -699,7 +758,7 @@ Name = property.Name,
 
         // Update section size
         long sectionEnd = writer.BaseStream.Position;
-        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+        UpdateSectionSize(writer, sizePos, (uint)(sectionEnd - sectionStart));
     }
 
     private void WriteTypeDefinition(BinaryWriter writer, TypeData type, Dictionary<string, int> stringIndices, Dictionary<TypeData, int> typeIndices)
@@ -776,8 +835,13 @@ Name = property.Name,
 
     private void WriteCodeSection(BinaryWriter writer, ModuleData moduleData)
     {
-        // Section header
-        WriteSectionHeader(writer, ".code", 0);
+        // Section name and null terminator
+        writer.Write(Encoding.UTF8.GetBytes(".code"));
+        writer.Write((byte)0);
+
+        // Size placeholder position
+        long sizePos = writer.BaseStream.Position;
+        writer.Write((uint)0); // Placeholder
 
         long sectionStart = writer.BaseStream.Position;
 
@@ -796,7 +860,7 @@ Name = property.Name,
 
         // Update section size
         long sectionEnd = writer.BaseStream.Position;
-        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+        UpdateSectionSize(writer, sizePos, (uint)(sectionEnd - sectionStart));
     }
 
     private void CollectAllInstructions(ModuleData moduleData, List<Instruction> instructions)
@@ -827,9 +891,21 @@ Name = property.Name,
 
     private List<Instruction> DeserializeInstructions(JsonNode instructionsNode)
     {
-        // This is a simplified deserialization - in practice you'd need full instruction deserialization
-        // For now, return empty list as placeholder
-        return new List<Instruction>();
+        if (instructionsNode == null)
+            return new List<Instruction>();
+
+        try
+        {
+            // Convert JsonNode to JsonElement for InstructionSerializer
+            using var doc = JsonDocument.Parse(instructionsNode.ToJsonString());
+            var instructions = InstructionSerializer.DeserializeInstructions(doc.RootElement);
+            return new List<Instruction>(instructions);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DEBUG: Failed to deserialize instructions: {ex.Message}");
+            return new List<Instruction>();
+        }
     }
 
     private void WriteInstruction(BinaryWriter writer, Instruction instruction)
@@ -958,8 +1034,13 @@ Name = property.Name,
 
     private void WriteConstantsSection(BinaryWriter writer, ModuleData moduleData)
     {
-        // Section header
-        WriteSectionHeader(writer, ".constants", 0);
+        // Section name and null terminator
+        writer.Write(Encoding.UTF8.GetBytes(".constants"));
+        writer.Write((byte)0);
+
+        // Size placeholder position
+        long sizePos = writer.BaseStream.Position;
+        writer.Write((uint)0); // Placeholder
 
         long sectionStart = writer.BaseStream.Position;
 
@@ -978,7 +1059,7 @@ Name = property.Name,
 
         // Update section size
         long sectionEnd = writer.BaseStream.Position;
-        UpdateSectionSize(writer, sectionStart - 8, (uint)(sectionEnd - sectionStart));
+        UpdateSectionSize(writer, sizePos, (uint)(sectionEnd - sectionStart));
     }
 
     private void CollectConstants(ModuleData moduleData, List<ConstantData> constants)
@@ -1011,22 +1092,44 @@ Name = property.Name,
         {
             foreach (var item in array)
             {
-                if (item is JsonObject obj)
+                if (item is not null)
                 {
-                    var opCode = obj["opCode"]?.GetValue<string>();
-                    if (opCode == "ldc" && obj["operand"] is JsonObject operand)
-                    {
-                        var value = operand["value"]?.GetValue<string>();
-                        var type = operand["type"]?.GetValue<string>();
-                        if (value != null && type != null)
-                        {
-                            constants.Add(new ConstantData
-                            {
-                                Value = value,
-                                Type = type
-                            });
-                        }
-                    }
+                    CollectConstantsFromJsonInstruction(item, constants);
+                }
+            }
+        }
+    }
+
+    private void CollectConstantsFromJsonInstruction(JsonNode instrNode, List<ConstantData> constants)
+    {
+        if (instrNode is not JsonObject obj)
+            return;
+
+        var opCode = obj["opCode"]?.GetValue<string>();
+        
+        // Collect constants from ldc instructions
+        if (opCode == "ldc" && obj["operand"] is JsonObject operand)
+        {
+            var value = operand["value"]?.GetValue<string>();
+            var type = operand["type"]?.GetValue<string>();
+            if (value != null && type != null)
+            {
+                constants.Add(new ConstantData
+                {
+                    Value = value,
+                    Type = type
+                });
+            }
+        }
+        
+        // Recursively collect from nested instructions (e.g., while body)
+        if (obj["operand"] is JsonObject nestedOp && nestedOp["body"] is JsonArray bodyInstructions)
+        {
+            foreach (var bodyInstr in bodyInstructions)
+            {
+                if (bodyInstr is not null)
+                {
+                    CollectConstantsFromJsonInstruction(bodyInstr, constants);
                 }
             }
         }
@@ -1034,17 +1137,21 @@ Name = property.Name,
 
     private void WriteConstant(BinaryWriter writer, ConstantData constant)
     {
+        // Normalize type name for comparison
+        var typeName = constant.Type.ToLowerInvariant();
+        
         // Write type
-        var typeByte = constant.Type switch
+        var typeByte = typeName switch
         {
-            "System.String" or "string" => (byte)0x05, // String
-            "System.Int32" or "int32" => (byte)0x01, // Int32
-            "System.Int64" or "int64" => (byte)0x01, // Int32 (simplified)
-            "System.Single" or "float32" => (byte)0x03, // Float
-            "System.Double" or "float64" => (byte)0x04, // Double
-            "System.Boolean" or "bool" => (byte)0x06, // Bool
+            "system.string" or "string" => (byte)0x05, // String
+            "system.int32" or "int32" => (byte)0x01, // Int32
+            "system.int64" or "int64" => (byte)0x02, // Int64
+            "system.single" or "float32" or "float" => (byte)0x03, // Float
+            "system.double" or "float64" or "double" => (byte)0x04, // Double
+            "system.boolean" or "bool" => (byte)0x06, // Bool
             _ => (byte)0x07 // Null
         };
+        
         writer.Write(typeByte);
 
         // Write value based on type
@@ -1055,6 +1162,12 @@ Name = property.Name,
                     writer.Write(intValue);
                 else
                     writer.Write(0);
+                break;
+            case 0x02: // Int64
+                if (long.TryParse(constant.Value, out var longValue))
+                    writer.Write(longValue);
+                else
+                    writer.Write(0L);
                 break;
             case 0x03: // Float
                 if (float.TryParse(constant.Value, out var floatValue))

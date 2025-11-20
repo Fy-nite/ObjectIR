@@ -14,4 +14,19 @@
     <ProjectReference Include="..\ObjectIR.Examples\ObjectIR.Examples.csproj" />
   </ItemGroup>
 
+  <!-- Copy native C++ runtime shared library next to executable for P/Invoke resolution -->
+  <ItemGroup>
+    <!-- Primary symlink/soname and the actual versioned .so -->
+    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CopyNativeRuntime" AfterTargets="Build">
+    <!-- Ensure library is present even if symlinks aren't preserved on some filesystems -->
+    <ItemGroup>
+      <NativeLib Include="$(MSBuildProjectDirectory)\..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeLib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

@@ -13,7 +13,7 @@ using json = nlohmann::json;
 // ============================================================================
 
 /// Executes IR instructions within an execution context
-class InstructionExecutor {
+class OBJECTIR_API InstructionExecutor {
 public:
     /// Parse opcode string to enum
     static OpCode ParseOpCode(const std::string& opStr);

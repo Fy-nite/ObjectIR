@@ -1,13 +1,14 @@
 
 # Set working directory to the script's location
 Set-Location $PSScriptRoot
-
+# set CMAKE_TLS_VERIFY=0 as ssl is down since yesterday
+$env:CMAKE_TLS_VERIFY="0"
 # Set paths relative to script directory
 $cppRuntimePath = "$PSScriptRoot/src/ObjectIR.CppRuntime"
 $unifiedRuntimePath = "$PSScriptRoot/src/OIRRuntime"
 $fortranpath = "$PSScriptRoot/src/OIFortran"
 $outputPath = "$PSScriptRoot/out"
-
+$CcompilerPath = "$PSScriptRoot/src/OIC"
 # Build C++ runtime
 cd $cppRuntimePath
 cmake -S . -B build
@@ -20,6 +21,11 @@ dotnet build -c Release
 cd ..
 # Build Fortran Compiler
 cd $fortranpath
+dotnet build -c Release
+cd ..
+
+# Build C Compiler
+cd $CcompilerPath
 dotnet build -c Release
 cd ..
 
@@ -47,6 +53,9 @@ Copy-Item "$unifiedRuntimePath/bin/Release/net9.0/*.dll" $outputPath -Recurse -E
 Copy-Item "$unifiedRuntimePath/bin/Release/net9.0/*" $outputPath -Recurse
 # Copy Fortran Compiler output
 Copy-Item "$fortranpath/bin/Release/net9.0/*" $outputPath -Recurse
+
+# Copy C Compiler output
+Copy-Item "$CcompilerPath/bin/Release/net9.0/*" $outputPath -Recurse
 
 # (Optional) Copy additional files (config, docs, etc.)
 # Copy-Item "README.md" $outputPath

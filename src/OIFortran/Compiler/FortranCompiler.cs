@@ -89,7 +89,21 @@ internal sealed class FortranCompiler
         }
 
         classBuilder.EndClass();
-        return builder.Build();
+        var module = builder.Build();
+        
+        // Set entry point metadata for FOB generation
+        if (module.Types.Count > 0 && module.Types[0] is ClassDefinition classDef)
+        {
+            module.Metadata["EntryPoint"] = $"{classDef.GetQualifiedName()}.Main";
+            Console.WriteLine($"DEBUG: Set EntryPoint to {classDef.GetQualifiedName()}.Main");
+        }
+        else
+        {
+            Console.WriteLine($"DEBUG: No ClassDefinition found, types: {module.Types.Count}");
+            module.Metadata["EntryPoint"] = $"{program.Name}.{program.Name}.Main";
+        }
+        
+        return module;
     }
 
     public Module CompilePartial(FortranProgram program)
@@ -127,7 +141,21 @@ internal sealed class FortranCompiler
         }
 
         classBuilder.EndClass();
-        return builder.Build();
+        var module = builder.Build();
+        
+        // Set entry point metadata for FOB generation
+        if (module.Types.Count > 0 && module.Types[0] is ClassDefinition classDef)
+        {
+            module.Metadata["EntryPoint"] = $"{classDef.GetQualifiedName()}.Main";
+            Console.WriteLine($"DEBUG CompilePartial: Set EntryPoint to {classDef.GetQualifiedName()}.Main");
+        }
+        else
+        {
+            Console.WriteLine($"DEBUG CompilePartial: No ClassDefinition found, types: {module.Types.Count}");
+            module.Metadata["EntryPoint"] = $"{program.Name}.{program.Name}.Main";
+        }
+        
+        return module;
     }
 
     private void CompileSubroutine(ClassBuilder classBuilder, FortranSubroutineDefinition subroutine)

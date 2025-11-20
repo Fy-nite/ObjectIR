@@ -1,8 +1,10 @@
 #include "objectir_runtime.hpp"
 #include "ir_loader.hpp"
+#include "fob_loader.hpp"
 
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -256,6 +258,54 @@ RUNTIME_API void *LoadModuleFromString(void *vmPtr, const char *json)
     return nullptr;
 }
 
+RUNTIME_API void *LoadFOBModuleFromFile(void *vmPtr, const char *filePath, char **entryClassName, char **entryMethodName)
+{
+    if (!vmPtr || !filePath || !entryClassName || !entryMethodName)
+    {
+        SetLastError("Invalid arguments to LoadFOBModuleFromFile");
+        return nullptr;
+    }
+
+    try
+    {
+        auto *handle = AsRuntimeHandle(vmPtr);
+        auto result = ObjectIR::FOBLoader::LoadFromFile(filePath);
+        handle->vm = result.vm;
+
+        // Get entry point class and method names
+        std::cerr << "[C++ Runtime] Entry point indices: type=" << result.entryTypeIndex 
+                  << ", method=" << result.entryMethodIndex 
+                  << ", classNames.size()=" << result.classNames.size() << std::endl;
+        
+        if (result.entryTypeIndex < result.classNames.size() &&
+            result.entryMethodIndex < result.methodNames[result.entryTypeIndex].size())
+        {
+            std::cerr << "[C++ Runtime] Found entry point: " << result.classNames[result.entryTypeIndex] 
+                      << "." << result.methodNames[result.entryTypeIndex][result.entryMethodIndex] << std::endl;
+            *entryClassName = CopyToCString(result.classNames[result.entryTypeIndex]);
+            *entryMethodName = CopyToCString(result.methodNames[result.entryTypeIndex][result.entryMethodIndex]);
+        }
+        else
+        {
+            std::cerr << "[C++ Runtime] Entry point validation failed!" << std::endl;
+            *entryClassName = nullptr;
+            *entryMethodName = nullptr;
+        }
+
+        ClearLastError();
+        return handle;
+    }
+    catch (const std::exception &ex)
+    {
+        SetLastError(ex.what());
+    }
+    catch (...)
+    {
+        SetLastError("Unknown error in LoadFOBModuleFromFile");
+    }
+    return nullptr;
+}
+
 RUNTIME_API void *CreateInstance(void *vmPtr, const char *className)
 {
     if (!vmPtr || !className)
@@ -383,7 +433,7 @@ RUNTIME_API void FreeObject(void *objectPtr)
     delete handle;
 }
 
-RUNTIME_API char *GetLastError()
+RUNTIME_API char *GetRuntimeLastError()
 {
     if (g_lastError.empty())
     {

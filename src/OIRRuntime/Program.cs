@@ -271,31 +271,37 @@ class Program
         
         try
         {
-            runtime.LoadModuleFromFile(fobPath);
+            var (entryClassName, entryMethodName) = runtime.LoadFOBModuleFromFile(fobPath);
+            
+            if (string.IsNullOrEmpty(entryClassName) || string.IsNullOrEmpty(entryMethodName))
+            {
+                Console.WriteLine("[ObjectIR] FOB module loaded but no valid entry point found in header.");
+                PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Loaded");
+                return;
+            }
+
+            Log($"[ObjectIR-CSharp] FOB module loaded successfully");
+            Log($"[ObjectIR-CSharp] Entry point: {entryClassName}.{entryMethodName}");
+
+            // Execute the entry point method
+            try
+            {
+                runtime.InvokeMethod(entryClassName, entryMethodName, null);
+                Log($"[ObjectIR-CSharp] Executed {entryClassName}.{entryMethodName} successfully");
+                PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Completed");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to execute entry point {entryClassName}.{entryMethodName}: {ex.Message}");
+                PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Failed");
+                throw;
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[ERROR] Failed to load FOB module: {ex.Message}");
             PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Failed");
             throw;
-        }
-        
-        Log($"[ObjectIR-CSharp] FOB module loaded successfully");
-
-        // For FOB modules, we don't have metadata about entry points
-        // Try to find and invoke a Main method if it exists
-        try
-        {
-            // Try to invoke a static Main method (pass null for instance)
-            runtime.InvokeMethod("Program", "Main", null);
-            Log($"[ObjectIR-CSharp] Executed Main method successfully");
-            PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Completed");
-        }
-        catch (Exception ex)
-        {
-            Log($"[ObjectIR-CSharp] Could not find or execute Main method: {ex.Message}");
-            Console.WriteLine("[ObjectIR] FOB module loaded but no executable entry point found.");
-            PrintRuntimeInfo(Path.GetFileNameWithoutExtension(fobPath), (int)new FileInfo(fobPath).Length, "Loaded");
         }
     }
 
