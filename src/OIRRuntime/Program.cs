@@ -343,21 +343,21 @@ class Program
         Module module = BuildExample(exampleName);
         string moduleName = module.Name;
 
-        // Serialize to JSON
-        Log($"[ObjectIR-CSharp] Serializing module to JSON");
-        string json = ModuleSerializer.ToJson(module);
-        string jsonFile = $"{moduleName}.json";
-        File.WriteAllText(jsonFile, json);
+        // Serialize to FOB
+        Log($"[ObjectIR-CSharp] Serializing module to FOB");
+        byte[] fobData = module.DumpFob();
+        string fobFile = $"{moduleName}.fob";
+        File.WriteAllBytes(fobFile, fobData);
 
-        Log($"[ObjectIR-CSharp] Module serialized: {jsonFile} ({new FileInfo(jsonFile).Length} bytes)");
+        Log($"[ObjectIR-CSharp] Module serialized: {fobFile} ({new FileInfo(fobFile).Length} bytes)");
 
         // Run in C++ runtime
         Log($"[ObjectIR-CSharp] Executing in C++ runtime...\n");
-    RunModuleInCppRuntime(jsonFile, Array.Empty<string>());
+        RunModuleInCppRuntime(fobFile, Array.Empty<string>());
     }
 
     /// <summary>
-    /// Build an example to JSON (without execution)
+    /// Build an example to FOB (without execution)
     /// </summary>
     static void BuildExampleToJson(string exampleName)
     {
@@ -366,12 +366,12 @@ class Program
         Module module = BuildExample(exampleName);
         string moduleName = module.Name;
 
-        Log($"[ObjectIR-CSharp] Serializing module to JSON");
-        string json = ModuleSerializer.ToJson(module);
-        string jsonFile = $"{moduleName}.json";
-        File.WriteAllText(jsonFile, json);
+        Log($"[ObjectIR-CSharp] Serializing module to FOB");
+        byte[] fobData = module.DumpFob();
+        string fobFile = $"{moduleName}.fob";
+        File.WriteAllBytes(fobFile, fobData);
 
-        Log($"[ObjectIR-CSharp] Module saved: {jsonFile} ({new FileInfo(jsonFile).Length} bytes)");
+        Log($"[ObjectIR-CSharp] Module saved: {fobFile} ({new FileInfo(fobFile).Length} bytes)");
         Log($"[ObjectIR-CSharp] Module '{moduleName}' is ready for compilation or execution");
     }
 
@@ -389,11 +389,11 @@ class Program
         Console.WriteLine($"  ✓ Module built with {module.Types.Count} types");
 
         // Step 2: Serialize
-        Console.WriteLine($"\n[Step 2/4] Serializing to JSON");
-        string json = ModuleSerializer.ToJson(module);
-        string jsonFile = $"{moduleName}.json";
-        File.WriteAllText(jsonFile, json);
-        Console.WriteLine($"  ✓ Serialized: {jsonFile} ({new FileInfo(jsonFile).Length} bytes)");
+        Console.WriteLine($"\n[Step 2/4] Serializing to FOB");
+        byte[] fobData = module.DumpFob();
+        string fobFile = $"{moduleName}.fob";
+        File.WriteAllBytes(fobFile, fobData);
+        Console.WriteLine($"  ✓ Serialized: {fobFile} ({new FileInfo(fobFile).Length} bytes)");
 
         // Step 3: Code Generation
         Console.WriteLine($"\n[Step 3/4] Generating C# code");
@@ -405,11 +405,11 @@ class Program
 
         // Step 4: Execute in C++ Runtime
         Console.WriteLine($"\n[Step 4/4] Executing in C++ runtime");
-        ExecuteModule(module, json, Array.Empty<string>());
+        RunModuleInCppRuntime(fobFile, Array.Empty<string>());
 
         Console.WriteLine($"\n{'='} Pipeline Complete {'='}\n");
         Console.WriteLine($"Output files:");
-        Console.WriteLine($"  - {jsonFile} (ObjectIR JSON)");
+        Console.WriteLine($"  - {fobFile} (ObjectIR FOB)");
         Console.WriteLine($"  - {csFile} (Generated C# code)");
     }
 

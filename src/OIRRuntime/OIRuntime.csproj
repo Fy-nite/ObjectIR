@@ -16,17 +16,24 @@
 
   <!-- Copy native C++ runtime shared library next to executable for P/Invoke resolution -->
   <ItemGroup>
-    <!-- Primary symlink/soname and the actual versioned .so -->
-    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Primary symlink/soname and the actual versioned .so (non-Windows) -->
+    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so" Condition="'$(OS)' != 'Windows_NT'" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" Condition="'$(OS)' != 'Windows_NT'" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Windows: copy the built DLL (rename to expected base name for DllImport) -->
+    <None Include="..\ObjectIR.CppRuntime\build\libobjectir_runtime.dll" Condition="'$(OS)' == 'Windows_NT'" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="CopyNativeRuntime" AfterTargets="Build">
     <!-- Ensure library is present even if symlinks aren't preserved on some filesystems -->
     <ItemGroup>
-      <NativeLib Include="$(MSBuildProjectDirectory)\..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" />
+      <!-- Linux/macOS: copy the versioned .so if present -->
+      <NativeLib Include="$(MSBuildProjectDirectory)\..\ObjectIR.CppRuntime\build\libobjectir_runtime.so.1.0.0" Condition="'$(OS)' != 'Windows_NT'" />
+      <!-- Windows: copy the built dll and rename to objectir_runtime.dll for DllImport resolution -->
+      <NativeLibWindows Include="$(MSBuildProjectDirectory)\..\ObjectIR.CppRuntime\build\libobjectir_runtime.dll" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
-    <Copy SourceFiles="@(NativeLib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(NativeLib)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="@(NativeLib) != ''" />
+    <!-- If building on Windows, copy and rename the DLL so DllImport("objectir_runtime") resolves to objectir_runtime.dll -->
+    <Copy SourceFiles="@(NativeLibWindows)" DestinationFiles="$(OutputPath)objectir_runtime.dll" SkipUnchangedFiles="true" Condition="@(NativeLibWindows) != ''" />
   </Target>
 
 </Project>

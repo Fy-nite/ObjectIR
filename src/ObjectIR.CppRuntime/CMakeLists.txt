@@ -36,6 +36,16 @@ set_target_properties(objectir_runtime PROPERTIES
     SOVERSION 1
 )
 
+# Option to build standalone executable
+option(BUILD_STANDALONE "Build standalone ObjectIR runtime executable" ON)
+
+# Build standalone executable if enabled
+if(BUILD_STANDALONE)
+    add_executable(objectir_runtime_exe src/main.cpp)
+    target_link_libraries(objectir_runtime_exe PRIVATE objectir_runtime)
+    target_include_directories(objectir_runtime_exe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
 # Enable testing
 enable_testing()
 

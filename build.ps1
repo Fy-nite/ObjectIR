@@ -11,7 +11,7 @@ $outputPath = "$PSScriptRoot/out"
 $CcompilerPath = "$PSScriptRoot/src/OIC"
 # Build C++ runtime
 cd $cppRuntimePath
-cmake -S . -B build
+cmake -S . -B build -DBUILD_STANDALONE=ON
 cmake --build build 
 cd ..
 
@@ -38,12 +38,25 @@ if (!(Test-Path $outputPath)) {
 if ($IsWindows) {
     Copy-Item "$cppRuntimePath/build/*.dll" $outputPath -Recurse -ErrorAction SilentlyContinue
     Copy-Item "$cppRuntimePath/build/*.lib" $outputPath -Recurse -ErrorAction SilentlyContinue
+    Copy-Item "$cppRuntimePath/build/*.exe" $outputPath -Recurse -ErrorAction SilentlyContinue
+    # Ensure exported runtime DLL is available under the base name expected by DllImport
+    try {
+        $libDll = Get-ChildItem -Path "$cppRuntimePath/build" -Filter "*objectir_runtime*.dll" -ErrorAction Stop | Select-Object -First 1
+        if ($libDll) {
+            $destName = Join-Path $outputPath "objectir_runtime.dll"
+            Copy-Item $libDll.FullName $destName -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        # Ignore if not found; Copy-Item above may already have placed an appropriate DLL
+    }
 } elseif ($IsLinux) {
     Copy-Item "$cppRuntimePath/build/*.so" $outputPath -Recurse -ErrorAction SilentlyContinue
     Copy-Item "$cppRuntimePath/build/*.a" $outputPath -Recurse -ErrorAction SilentlyContinue
+    Copy-Item "$cppRuntimePath/build/objectir_runtime_exe" $outputPath -Recurse -ErrorAction SilentlyContinue
 } elseif ($IsMacOS) {
     Copy-Item "$cppRuntimePath/build/*.dylib" $outputPath -Recurse -ErrorAction SilentlyContinue
     Copy-Item "$cppRuntimePath/build/*.a" $outputPath -Recurse -ErrorAction SilentlyContinue
+    Copy-Item "$cppRuntimePath/build/objectir_runtime_exe" $outputPath -Recurse -ErrorAction SilentlyContinue
 }
 
 # Copy Unified Runtime output (DLL for .NET, works on all platforms)

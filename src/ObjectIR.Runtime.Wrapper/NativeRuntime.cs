@@ -108,9 +108,10 @@ public static class NativeRuntime
     public static extern void FreeObject(IntPtr obj);
 
     /// <summary>
-    /// Get last error message
+    /// Get last error message from the runtime C API
+    /// Note: native function is named `GetRuntimeLastError` in the C++ runtime.
     /// </summary>
-    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetRuntimeLastError")]
     public static extern IntPtr GetLastError();
 
     // =========================================================================
