@@ -2,6 +2,9 @@
     "cmake.sourceDirectory": "/run/media/charlie/the cat storage v2/New folder (8)/ObjectIR/Objection",
     "cmake.ignoreCMakeListsMissing": true,
     "files.associations": {
-        "iosfwd": "cpp"
+        "*.uh": "uhigh",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "xstring": "cpp"
     }
 }

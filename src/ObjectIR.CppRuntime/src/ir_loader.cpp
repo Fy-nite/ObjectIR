@@ -3,6 +3,7 @@
 #include "instruction_executor.hpp"
 #include "stdlib.hpp"
 #include <fstream>
+#include <iostream>
 #include <algorithm>
 
 namespace ObjectIR {
@@ -141,7 +142,7 @@ void IRLoader::LoadMethods(ClassRef classRef, const json& methodsArray, std::sha
         std::string returnTypeStr = methodJson["returnType"];
         TypeReference returnType = ParseTypeReference(vm, returnTypeStr);
 
-        bool isStatic = methodJson.value("static", false);
+        bool isStatic = methodJson.value("isStatic", false);
         auto method = std::make_shared<Method>(name, returnType, isStatic);
 
         if (methodJson.contains("parameters")) {
@@ -153,9 +154,34 @@ void IRLoader::LoadMethods(ClassRef classRef, const json& methodsArray, std::sha
             }
         }
 
-        classRef->AddMethod(method);
+        // Load method body/instructions
+        if (methodJson.contains("body") && methodJson["body"].is_array()) {
+            std::vector<Instruction> instructions;
+            int instrCount = 0;
+            for (const auto& instrJson : methodJson["body"]) {
+                try {
+                    std::cerr << "  [" << name << "] Parsing instruction " << instrCount << ": " 
+                              << instrJson.dump() << std::endl;
+                    Instruction instr = InstructionExecutor::ParseJsonInstruction(instrJson);
+                    instructions.push_back(instr);
+                    std::cerr << "  [" << name << "] ✓ Instruction " << instrCount << " parsed successfully" << std::endl;
+                } catch (const std::exception& e) {
+                    // If instruction parsing fails, log but continue
+                    // The method will have partial instructions rather than failing completely
+                    std::cerr << "ERROR [" << name << "] Failed to parse instruction " << instrCount 
+                              << ": " << e.what() << std::endl;
+                    std::cerr << "  Instruction JSON: " << instrJson.dump() << std::endl;
+                    std::cerr << "  Instruction type: " << instrJson.type_name() << std::endl;
+                }
+                instrCount++;
+            }
+            if (!instructions.empty()) {
+                std::cerr << "[" << name << "] Setting " << instructions.size() << " instructions on method" << std::endl;
+                method->SetInstructions(std::move(instructions));
+            }
+        }
 
-        // TODO: Load method body/instructions
+        classRef->AddMethod(method);
     }
 }
 

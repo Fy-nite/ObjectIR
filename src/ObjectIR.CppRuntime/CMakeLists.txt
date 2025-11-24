@@ -4,18 +4,31 @@ project(ObjectIR.CppRuntime VERSION 1.0.0 LANGUAGES CXX)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BUILD_GUI ON)
+# Find nlohmann/json - try system first, then fetch
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    # Fetch nlohmann/json from GitHub if not already available
+    include(FetchContent)
+    FetchContent_Declare(json
+      URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
+      TLS_VERIFY OFF
+    )
+    set(FETCHCONTENT_TLS_VERIFY OFF)
+    FetchContent_MakeAvailable(json)
+endif()
 
-# Fetch nlohmann/json from GitHub if not already available
-include(FetchContent)
-FetchContent_Declare(json
-  URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
-)
-FetchContent_MakeAvailable(json)
+# Find Qt6 (or Qt5 as fallback)
+find_package(Qt6 COMPONENTS Widgets QUIET)
+if(NOT Qt6_FOUND)
+    find_package(Qt5 COMPONENTS Widgets QUIET)
+endif()
 
 # Add the library
 add_library(objectir_runtime SHARED
     src/objectir_runtime.cpp
     src/ir_loader.cpp
+    src/ir_text_parser.cpp
     src/fob_loader.cpp
     src/instruction_executor.cpp
     src/stdlib.cpp
@@ -46,6 +59,29 @@ if(BUILD_STANDALONE)
     target_include_directories(objectir_runtime_exe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
+# Option to build GUI frontend
+option(BUILD_GUI "Build ObjectIR GUI frontend with Qt" OFF)
+
+# Build GUI frontend if enabled and Qt is available
+if(BUILD_GUI)
+    # Enable MOC (Meta-Object Compiler) for Qt
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC ON)
+    
+
+        set(Qt_VERSION_MAJOR 6)
+        set(Qt_LIBS Qt6::Widgets Qt6::Core)
+
+    add_executable(objectir_gui src/gui_frontend.cpp)
+    target_link_libraries(objectir_gui PRIVATE objectir_runtime ${Qt_LIBS})
+    target_include_directories(objectir_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    
+    message(STATUS "ObjectIR GUI enabled (using Qt${Qt_VERSION_MAJOR})")
+elseif(BUILD_GUI)
+    message(WARNING "BUILD_GUI=ON but Qt6 and Qt5 not found. GUI will not be built.")
+endif()
+
 # Enable testing
 enable_testing()
 
@@ -64,6 +100,7 @@ target_link_libraries(fob_test PRIVATE objectir_runtime)
 
 add_executable(format_test examples/format_test.cpp)
 target_link_libraries(format_test PRIVATE objectir_runtime)
+
 
 # Install configuration
 install(TARGETS objectir_runtime
