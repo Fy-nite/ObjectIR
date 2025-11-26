@@ -31,9 +31,9 @@ int main(int argc, char* argv[]) {
     std::string entryPoint = (argc >= 3) ? argv[2] : "Main.Main";
 
     // Parse entry point
-    size_t dotPos = entryPoint.find('.');
+    size_t dotPos = entryPoint.rfind('.');
     if (dotPos == std::string::npos) {
-        std::cerr << "Invalid entry point format. Expected: Class.Method" << std::endl;
+        std::cerr << "Invalid entry point format. Expected: Class.Method or Namespace.Class.Method" << std::endl;
         return 1;
     }
 
@@ -58,9 +58,54 @@ int main(int argc, char* argv[]) {
             std::cerr << "Failed to load module from: " << modulePath << std::endl;
             return 1;
         }
+        
+        // // Print all classes and methods in the loaded module
+        // std::cout << "\n=== Module Introspection ===" << std::endl;
+        // std::cout << "Classes and Methods in the module:" << std::endl;
+        // for (const auto& className : vm->GetAllClassNames()) {
+        //     ClassRef classRef = vm->GetClass(className);
+        //     std::cout << "Class: " << className << std::endl;
+        //     for (const auto& method : classRef->GetAllMethods()) {
+        //         std::cout << "  Method: " << method->GetName() 
+        //                   << " (Return type: " << method->GetReturnType().ToString() 
+        //                   << ", Static: " << (method->IsStatic() ? "yes" : "no") << ")" << std::endl;
+                
+        //         // Print parameters if any
+        //         const auto& params = method->GetParameters();
+        //         if (!params.empty()) {
+        //             std::cout << "    Parameters:" << std::endl;
+        //             for (const auto& param : params) {
+        //                 std::cout << "      " << param.first << ": " << param.second.ToString() << std::endl;
+        //             }
+        //         }
+        //     }
+        //     std::cout << std::endl;
+        // }
+        // std::cout << "=== End Introspection ===\n" << std::endl;
 
         // Find the entry class
-        auto entryClass = vm->GetClass(className);
+        ClassRef entryClass = nullptr;
+        try {
+            entryClass = vm->GetClass(className);
+        } catch (const std::runtime_error& e) {
+            std::cout << "Debug: Could not find class '" << className << "': " << e.what() << std::endl;
+            
+            // Class not found - try fallback if using default entry point
+            if (entryPoint == "Main.Main") {
+                std::cout << "Note: Main.Main not found, searching for Program.Main in any namespace..." << std::endl;
+                try {
+                    entryClass = vm->GetClass("Program");
+                    if (entryClass) {
+                        className = "Program";
+                        methodName = "Main";
+                        std::cout << "Found Program.Main entry point" << std::endl;
+                    }
+                } catch (const std::runtime_error& e2) {
+                    std::cout << "Debug: Could not find class 'Program': " << e2.what() << std::endl;
+                }
+            }
+        }
+        
         if (!entryClass) {
             std::cerr << "Entry class '" << className << "' not found in module" << std::endl;
             return 1;

@@ -1,0 +1,754 @@
+{
+  "name": "test_calculator",
+  "version": "1.0.0",
+  "metadata": {},
+  "types": [
+    {
+      "kind": "Class",
+      "name": "Program",
+      "namespace": "Calculator",
+      "access": "Public",
+      "isAbstract": false,
+      "isSealed": false,
+      "interfaces": [],
+      "baseInterfaces": [],
+      "genericParameters": [],
+      "fields": [],
+      "methods": [
+        {
+          "name": "Main",
+          "returnType": "void",
+          "access": "Public",
+          "isStatic": true,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "args",
+              "type": "System.string[]"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 8,
+          "instructions": [
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "string?"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "string?"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "string?"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "string?"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": []
+    },
+    {
+      "kind": "Class",
+      "name": "Calculator",
+      "namespace": "Calculator",
+      "access": "Public",
+      "isAbstract": false,
+      "isSealed": false,
+      "interfaces": [],
+      "baseInterfaces": [],
+      "genericParameters": [],
+      "fields": [],
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "int32",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "a",
+              "type": "int32"
+            },
+            {
+              "name": "b",
+              "type": "int32"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 16,
+          "instructions": [
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "stfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "pop"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Add(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "name": "Subtract",
+          "returnType": "int32",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "a",
+              "type": "int32"
+            },
+            {
+              "name": "b",
+              "type": "int32"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 16,
+          "instructions": [
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "stfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "pop"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Subtract(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "name": "Multiply",
+          "returnType": "int32",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "a",
+              "type": "int32"
+            },
+            {
+              "name": "b",
+              "type": "int32"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 16,
+          "instructions": [
+            {
+              "opCode": "ldnull"
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "stfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "pop"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Multiply(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "this"
+              }
+            },
+            {
+              "opCode": "ldfld",
+              "operand": {
+                "field": {
+                  "declaringType": "Calculator.Calculator",
+                  "name": "_result",
+                  "type": "int32"
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "name": "Divide",
+          "returnType": "float64",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "a",
+              "type": "float64"
+            },
+            {
+              "name": "b",
+              "type": "float64"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 10,
+          "instructions": [
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Divide(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "name": "GetResult",
+          "returnType": "int32",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [],
+          "localVariables": [],
+          "instructionCount": 0,
+          "instructions": []
+        },
+        {
+          "name": "ClearHistory",
+          "returnType": "void",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [],
+          "localVariables": [],
+          "instructionCount": 0,
+          "instructions": []
+        }
+      ],
+      "properties": []
+    },
+    {
+      "kind": "Interface",
+      "name": "IMathOperations",
+      "namespace": "Calculator",
+      "access": "Public",
+      "isAbstract": false,
+      "isSealed": false,
+      "interfaces": [],
+      "baseInterfaces": [],
+      "genericParameters": [],
+      "fields": [],
+      "methods": [],
+      "properties": []
+    },
+    {
+      "kind": "Class",
+      "name": "Operation",
+      "namespace": "Calculator",
+      "access": "Public",
+      "isAbstract": false,
+      "isSealed": false,
+      "interfaces": [],
+      "baseInterfaces": [],
+      "genericParameters": [],
+      "fields": [],
+      "methods": [
+        {
+          "name": "Execute",
+          "returnType": "int32",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": true,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "a",
+              "type": "int32"
+            },
+            {
+              "name": "b",
+              "type": "int32"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 0,
+          "instructions": []
+        },
+        {
+          "name": "GetName",
+          "returnType": "System.string",
+          "access": "Public",
+          "isStatic": false,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [],
+          "localVariables": [],
+          "instructionCount": 0,
+          "instructions": []
+        }
+      ],
+      "properties": []
+    }
+  ],
+  "functions": []
+}

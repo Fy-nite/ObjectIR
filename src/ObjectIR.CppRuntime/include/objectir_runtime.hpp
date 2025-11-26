@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <cstdint>
 #include <any>
+#include <iostream>
 
 #if defined(_WIN32)
   #if defined(objectir_runtime_EXPORTS)
@@ -73,7 +74,9 @@ namespace ObjectIR
         [[nodiscard]] ClassRef GetClassType() const { return _classType; }
         [[nodiscard]] bool IsArray() const { return _elementType != nullptr; }
         [[nodiscard]] TypeReference GetElementType() const { return *_elementType; }
-
+        [[nodiscard]] bool IsObject() const { return !_isPrimitive && _classType != nullptr; }
+        [[nodiscard]] std::string ToString() const;
+  
         static TypeReference Int32();
         static TypeReference Int64();
         static TypeReference Float32();
@@ -324,6 +327,7 @@ namespace ObjectIR {
         // Method management
         void AddMethod(MethodRef method);
         [[nodiscard]] MethodRef GetMethod(const std::string &name) const;
+        [[nodiscard]] std::vector<MethodRef> GetMethods() const;
         [[nodiscard]] MethodRef LookupMethod(const std::string &name) const;
         [[nodiscard]] const std::vector<MethodRef> &GetAllMethods() const { return _methods; }
 
@@ -468,16 +472,33 @@ namespace ObjectIR {
     // Virtual Machine - Runtime engine
     // ============================================================================
 
+    // ============================================================================
+    // Virtual Machine - Runtime execution engine
+    // ============================================================================
+
+    /// Function signature for custom output redirection
+    using OutputFunction = std::function<void(const std::string&)>;
+
     class OBJECTIR_API VirtualMachine
     {
     public:
         VirtualMachine();
 
+        // Output redirection
+        void SetOutputFunction(OutputFunction func) { _outputFunction = func; }
+        void WriteOutput(const std::string& text) {
+            if (_outputFunction) {
+                _outputFunction(text);
+            } else {
+                std::cout << text;
+            }
+        }
+
         // Class registry
         void RegisterClass(ClassRef classType);
         [[nodiscard]] ClassRef GetClass(const std::string &name) const;
         [[nodiscard]] bool HasClass(const std::string &name) const;
-
+        [[nodiscard]] std::vector<std::string> GetAllClassNames() const;
         // Object creation
         [[nodiscard]] ObjectRef CreateObject(ClassRef classType);
         [[nodiscard]] ObjectRef CreateObject(const std::string &className);
@@ -496,6 +517,7 @@ namespace ObjectIR {
         std::unordered_map<std::string, ClassRef> _classes;
         std::vector<std::unique_ptr<ExecutionContext>> _contextStack;
         std::unique_ptr<ExecutionContext> _currentContext;
+        OutputFunction _outputFunction;
     };
 
     // ============================================================================

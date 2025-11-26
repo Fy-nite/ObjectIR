@@ -1,0 +1,794 @@
+{
+  "Name": "test_calculator",
+  "Version": "1.0.0",
+  "TypeCount": 3,
+  "Types": [
+    {
+      "Name": "Calculator",
+      "Namespace": "Calculator",
+      "Kind": "Class",
+      "Access": "Public",
+      "FieldCount": 2,
+      "MethodCount": 6,
+      "Fields": [
+        {
+          "Name": "_result",
+          "Type": "int32",
+          "Access": "Private",
+          "IsStatic": false,
+          "IsReadOnly": false
+        },
+        {
+          "Name": "_history",
+          "Type": "global::System.Collections.Generic.List\u003CSystem.string\u003E",
+          "Access": "Private",
+          "IsStatic": false,
+          "IsReadOnly": false
+        }
+      ],
+      "Methods": [
+        {
+          "Name": "Add",
+          "ReturnType": "int32",
+          "Access": "Public",
+          "ParameterCount": 2,
+          "Parameters": [
+            {
+              "Name": "a",
+              "Type": "int32"
+            },
+            {
+              "Name": "b",
+              "Type": "int32"
+            }
+          ],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 17,
+          "Instructions": [
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "add"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Add(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_history"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "Subtract",
+          "ReturnType": "int32",
+          "Access": "Public",
+          "ParameterCount": 2,
+          "Parameters": [
+            {
+              "Name": "a",
+              "Type": "int32"
+            },
+            {
+              "Name": "b",
+              "Type": "int32"
+            }
+          ],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 17,
+          "Instructions": [
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "sub"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Subtract(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_history"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "Multiply",
+          "ReturnType": "int32",
+          "Access": "Public",
+          "ParameterCount": 2,
+          "Parameters": [
+            {
+              "Name": "a",
+              "Type": "int32"
+            },
+            {
+              "Name": "b",
+              "Type": "int32"
+            }
+          ],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 17,
+          "Instructions": [
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "mul"
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Multiply(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_history"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_result"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "Divide",
+          "ReturnType": "float64",
+          "Access": "Public",
+          "ParameterCount": 2,
+          "Parameters": [
+            {
+              "Name": "a",
+              "Type": "float64"
+            },
+            {
+              "Name": "b",
+              "Type": "float64"
+            }
+          ],
+          "LocalVariables": [
+            {
+              "Name": "result",
+              "Type": "float64"
+            }
+          ],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 22,
+          "Instructions": [
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "0",
+                "type": "int32"
+              }
+            },
+            {
+              "opCode": "ceq"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "Cannot divide by zero",
+                      "type": "System.string"
+                    }
+                  },
+                  {
+                    "opCode": "newobj",
+                    "operand": {
+                      "type": "ArgumentException"
+                    }
+                  },
+                  {
+                    "opCode": "throw"
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "div"
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Divide(",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "a"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ", ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "b"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": ") = ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "_history"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "List",
+                  "name": "Add",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "result"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "GetResult",
+          "ReturnType": "int32",
+          "Access": "Public",
+          "ParameterCount": 0,
+          "Parameters": [],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 0,
+          "Instructions": []
+        },
+        {
+          "Name": "ClearHistory",
+          "ReturnType": "void",
+          "Access": "Public",
+          "ParameterCount": 0,
+          "Parameters": [],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 0,
+          "Instructions": []
+        }
+      ]
+    },
+    {
+      "Name": "IMathOperations",
+      "Namespace": "Calculator",
+      "Kind": "Interface",
+      "Access": "Public"
+    },
+    {
+      "Name": "Operation",
+      "Namespace": "Calculator",
+      "Kind": "Class",
+      "Access": "Public",
+      "FieldCount": 1,
+      "MethodCount": 2,
+      "Fields": [
+        {
+          "Name": "_name",
+          "Type": "System.string",
+          "Access": "Protected",
+          "IsStatic": false,
+          "IsReadOnly": false
+        }
+      ],
+      "Methods": [
+        {
+          "Name": "Execute",
+          "ReturnType": "int32",
+          "Access": "Public",
+          "ParameterCount": 2,
+          "Parameters": [
+            {
+              "Name": "a",
+              "Type": "int32"
+            },
+            {
+              "Name": "b",
+              "Type": "int32"
+            }
+          ],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": true,
+          "InstructionCount": 0,
+          "Instructions": []
+        },
+        {
+          "Name": "GetName",
+          "ReturnType": "System.string",
+          "Access": "Public",
+          "ParameterCount": 0,
+          "Parameters": [],
+          "LocalVariables": [],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 0,
+          "Instructions": []
+        }
+      ]
+    }
+  ]
+}

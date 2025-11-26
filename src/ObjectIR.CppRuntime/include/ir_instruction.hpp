@@ -54,6 +54,7 @@ enum class OpCode {
     Br,
     BrTrue,
     BrFalse,
+    If,
     
     // Object operations
     NewObj,
@@ -157,7 +158,27 @@ struct Instruction {
         WhileData& operator=(WhileData&&) noexcept = default;
     };
 
+    struct IfData {
+        std::vector<Instruction> thenBlock;
+        std::vector<Instruction> elseBlock;
+
+        IfData() = default;
+        IfData(const IfData& other)
+            : thenBlock(other.thenBlock),
+              elseBlock(other.elseBlock) {}
+        IfData& operator=(const IfData& other) {
+            if (this != &other) {
+                thenBlock = other.thenBlock;
+                elseBlock = other.elseBlock;
+            }
+            return *this;
+        }
+        IfData(IfData&&) noexcept = default;
+        IfData& operator=(IfData&&) noexcept = default;
+    };
+
     std::optional<WhileData> whileData;
+    std::optional<IfData> ifData;
 
     Instruction() = default;
     Instruction(const Instruction& other)
@@ -172,7 +193,8 @@ struct Instruction {
           constantIsNull(other.constantIsNull),
           identifier(other.identifier),
           callTarget(other.callTarget),
-          whileData(other.whileData) {}
+          whileData(other.whileData),
+          ifData(other.ifData) {}
 
     Instruction& operator=(const Instruction& other) {
         if (this != &other) {
@@ -188,6 +210,7 @@ struct Instruction {
             identifier = other.identifier;
             callTarget = other.callTarget;
             whileData = other.whileData;
+            ifData = other.ifData;
         }
         return *this;
     }

@@ -30,6 +30,7 @@
 #include <QMessageBox>
 #include <iostream>
 #include <string>
+#include <functional>
 
 using namespace ObjectIR;
 
@@ -839,10 +840,14 @@ private slots:
         applyTheme();
     }
 
-    void toggleTheme() {
-        // Legacy method - kept for compatibility but not used
-        currentTheme = (currentTheme == Theme::Light) ? Theme::Dark : Theme::Light;
-        applyTheme();
+    void appendToOutput(const std::string& text) {
+        QString qtext = QString::fromStdString(text);
+        if (qtext.endsWith('\n')) {
+            qtext.chop(1);
+        }
+        if (!qtext.isEmpty()) {
+            outputEdit->setPlainText(outputEdit->toPlainText() + qtext + "\n");
+        }
     }
 
 private slots:
@@ -946,6 +951,9 @@ private slots:
                 vm = IRTextParser::ParseToVirtualMachine(code.toStdString());
                 outputEdit->append("Text IR parsed successfully\n");
             }
+            
+            // Set up output redirection to GUI console IMMEDIATELY after VM creation
+            vm->SetOutputFunction(std::bind(&MainWindow::appendToOutput, this, std::placeholders::_1));
             
             // Find and execute Main method
             auto mainClass = vm->GetClass("Program");

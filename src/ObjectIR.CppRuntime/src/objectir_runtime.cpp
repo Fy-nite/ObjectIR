@@ -59,6 +59,29 @@ TypeReference TypeReference::Object() {
     return TypeReference(static_cast<ClassRef>(nullptr));
 }
 
+std::string TypeReference::ToString() const {
+    if (_isPrimitive) {
+        switch (_primitiveType) {
+            case PrimitiveType::Int32: return "int32";
+            case PrimitiveType::Int64: return "int64";
+            case PrimitiveType::Float32: return "float";
+            case PrimitiveType::Float64: return "double";
+            case PrimitiveType::Bool: return "bool";
+            case PrimitiveType::Void: return "void";
+            case PrimitiveType::String: return "string";
+            case PrimitiveType::UInt8: return "uint8";
+            case PrimitiveType::Object: return "object";
+            default: return "unknown";
+        }
+    } else {
+        if (_classType) {
+            return _classType->GetName();
+        } else {
+            return "object";
+        }
+    }
+}
+
 // ============================================================================
 // Value Implementation
 // ============================================================================
@@ -222,6 +245,10 @@ MethodRef Class::GetMethod(const std::string& name) const {
         }
     }
     return nullptr;
+}
+
+std::vector<MethodRef> Class::GetMethods() const {
+    return _methods;
 }
 
 MethodRef Class::LookupMethod(const std::string& name) const {
@@ -392,6 +419,17 @@ ClassRef VirtualMachine::GetClass(const std::string& name) const {
     }
     
     throw std::runtime_error("Class not found: " + name);
+}
+
+std::vector<std::string> VirtualMachine::GetAllClassNames() const {
+    std::vector<std::string> classNames;
+    for (const auto& pair : _classes) {
+        classNames.push_back(pair.first);
+    }
+    // Remove duplicates if any (due to qualified and simple names)
+    std::sort(classNames.begin(), classNames.end());
+    classNames.erase(std::unique(classNames.begin(), classNames.end()), classNames.end());
+    return classNames;
 }
 
 bool VirtualMachine::HasClass(const std::string& name) const {

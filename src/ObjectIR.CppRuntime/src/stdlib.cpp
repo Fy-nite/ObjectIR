@@ -47,28 +47,28 @@ std::string ValueToDisplayString(const Value& value) {
 
 Value Console_WriteLine_String(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsString()) {
-        std::cout << args[0].AsString() << std::endl;
+        vm->WriteOutput(args[0].AsString() + "\n");
     }
     return Value();
 }
 
 Value Console_WriteLine_Int32(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsInt32()) {
-        std::cout << args[0].AsInt32() << std::endl;
+        vm->WriteOutput(std::to_string(args[0].AsInt32()) + "\n");
     }
     return Value();
 }
 
 Value Console_WriteLine_Int64(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsInt64()) {
-        std::cout << args[0].AsInt64() << std::endl;
+        vm->WriteOutput(std::to_string(args[0].AsInt64()) + "\n");
     }
     return Value();
 }
 
 Value Console_WriteLine_Double(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsFloat64()) {
-        std::cout << args[0].AsFloat64() << std::endl;
+        vm->WriteOutput(std::to_string(args[0].AsFloat64()) + "\n");
     }
     return Value();
 }
@@ -76,20 +76,20 @@ Value Console_WriteLine_Double(ObjectRef thisPtr, const std::vector<Value>& args
 // Overload for float32
 Value Console_WriteLine_Float(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsFloat32()) {
-        std::cout << args[0].AsFloat32() << std::endl;
+        vm->WriteOutput(std::to_string(args[0].AsFloat32()) + "\n");
     }
     return Value();
 }
 
 Value Console_WriteLine_Bool(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
     if (args.size() >= 1 && args[0].IsBool()) {
-        std::cout << (args[0].AsBool() ? "true" : "false") << std::endl;
+        vm->WriteOutput((args[0].AsBool() ? "true" : "false") + std::string("\n"));
     }
     return Value();
 }
 
 Value Console_WriteLine_Void(ObjectRef thisPtr, const std::vector<Value>& args, VirtualMachine* vm) {
-    std::cout << std::endl;
+    vm->WriteOutput("\n");
     return Value();
 }
 

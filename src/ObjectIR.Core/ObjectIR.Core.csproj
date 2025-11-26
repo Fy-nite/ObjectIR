@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="2.25.0" />
+    <PackageReference Include="JsonSchema.Net" Version="7.0.3" />
   </ItemGroup>
 
 </Project>

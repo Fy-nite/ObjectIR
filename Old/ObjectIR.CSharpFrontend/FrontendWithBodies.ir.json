@@ -1,0 +1,1893 @@
+{
+  "Name": "FrontendWithBodies",
+  "Version": "1.0.0",
+  "TypeCount": 5,
+  "Types": [
+    {
+      "Name": "Program",
+      "Namespace": "\u003Cglobal namespace\u003E",
+      "Kind": "Class",
+      "Access": 1,
+      "FieldCount": 0,
+      "MethodCount": 1,
+      "Methods": [
+        {
+          "Name": "Main",
+          "ReturnType": "int32",
+          "ParameterCount": 1,
+          "Parameters": [
+            {
+              "Name": "args",
+              "Type": "System.string[]"
+            }
+          ],
+          "LocalVariables": [
+            {
+              "Name": "parser",
+              "Type": "CommandLineParser"
+            },
+            {
+              "Name": "options",
+              "Type": "CompilerOptions"
+            },
+            {
+              "Name": "compiler",
+              "Type": "CompilerService"
+            },
+            {
+              "Name": "success",
+              "Type": "bool"
+            }
+          ],
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 1,
+          "Instructions": [
+            {
+              "opCode": "try",
+              "operand": {
+                "tryBlock": [
+                  {
+                    "opCode": "try",
+                    "operand": {
+                      "tryBlock": [
+                        {
+                          "opCode": "ldarg",
+                          "operand": {
+                            "argumentName": "args"
+                          }
+                        },
+                        {
+                          "opCode": "ldloc",
+                          "operand": {
+                            "localName": "parser"
+                          }
+                        },
+                        {
+                          "opCode": "callvirt",
+                          "operand": {
+                            "method": {
+                              "declaringType": "CommandLineParser",
+                              "name": "Parse",
+                              "returnType": "CompilerOptions",
+                              "parameterTypes": [
+                                ""
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "opCode": "stloc",
+                          "operand": {
+                            "localName": "options"
+                          }
+                        }
+                      ],
+                      "catchClauses": [
+                        {
+                          "exceptionType": "ArgumentException",
+                          "body": [
+                            {
+                              "opCode": "ldc",
+                              "operand": {
+                                "value": "Error: ",
+                                "type": "System.string"
+                              }
+                            },
+                            {
+                              "opCode": "ldarg",
+                              "operand": {
+                                "argumentName": "ex"
+                              }
+                            },
+                            {
+                              "opCode": "callvirt",
+                              "operand": {
+                                "method": {
+                                  "declaringType": "System.Object",
+                                  "name": "ToString",
+                                  "returnType": "System.string",
+                                  "parameterTypes": []
+                                }
+                              }
+                            },
+                            {
+                              "opCode": "call",
+                              "operand": {
+                                "method": {
+                                  "declaringType": "System.string",
+                                  "name": "Concat",
+                                  "returnType": "System.string",
+                                  "parameterTypes": [
+                                    "System.string",
+                                    "System.string"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "opCode": "ldarg",
+                              "operand": {
+                                "argumentName": "Console"
+                              }
+                            },
+                            {
+                              "opCode": "callvirt",
+                              "operand": {
+                                "method": {
+                                  "declaringType": "TextWriter",
+                                  "name": "WriteLine",
+                                  "returnType": "void",
+                                  "parameterTypes": [
+                                    "System.string"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "opCode": "ldarg",
+                              "operand": {
+                                "argumentName": "Console"
+                              }
+                            },
+                            {
+                              "opCode": "callvirt",
+                              "operand": {
+                                "method": {
+                                  "declaringType": "TextWriter",
+                                  "name": "WriteLine",
+                                  "returnType": "void",
+                                  "parameterTypes": []
+                                }
+                              }
+                            },
+                            {
+                              "opCode": "call",
+                              "operand": {
+                                "method": {
+                                  "declaringType": "CommandLineParser",
+                                  "name": "PrintHelp",
+                                  "returnType": "void",
+                                  "parameterTypes": []
+                                }
+                              }
+                            },
+                            {
+                              "opCode": "ldc",
+                              "operand": {
+                                "value": "1",
+                                "type": "int32"
+                              }
+                            },
+                            {
+                              "opCode": "ret"
+                            }
+                          ]
+                        }
+                      ],
+                      "finallyBlock": null
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "if",
+                    "operand": {
+                      "thenBlock": [
+                        {
+                          "opCode": "call",
+                          "operand": {
+                            "method": {
+                              "declaringType": "CommandLineParser",
+                              "name": "PrintHelp",
+                              "returnType": "void",
+                              "parameterTypes": []
+                            }
+                          }
+                        },
+                        {
+                          "opCode": "ldc",
+                          "operand": {
+                            "value": "0",
+                            "type": "int32"
+                          }
+                        },
+                        {
+                          "opCode": "ret"
+                        }
+                      ],
+                      "elseBlock": null
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "if",
+                    "operand": {
+                      "thenBlock": [
+                        {
+                          "opCode": "call",
+                          "operand": {
+                            "method": {
+                              "declaringType": "CommandLineParser",
+                              "name": "PrintVersion",
+                              "returnType": "void",
+                              "parameterTypes": []
+                            }
+                          }
+                        },
+                        {
+                          "opCode": "ldc",
+                          "operand": {
+                            "value": "0",
+                            "type": "int32"
+                          }
+                        },
+                        {
+                          "opCode": "ret"
+                        }
+                      ],
+                      "elseBlock": null
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "newobj",
+                    "operand": {
+                      "type": "CompilerService"
+                    }
+                  },
+                  {
+                    "opCode": "stloc",
+                    "operand": {
+                      "localName": "compiler"
+                    }
+                  },
+                  {
+                    "opCode": "stloc",
+                    "operand": {
+                      "localName": "success"
+                    }
+                  },
+                  {
+                    "opCode": "ret"
+                  }
+                ],
+                "catchClauses": [
+                  {
+                    "exceptionType": "Exception",
+                    "body": [
+                      {
+                        "opCode": "ldc",
+                        "operand": {
+                          "value": "Fatal error: ",
+                          "type": "System.string"
+                        }
+                      },
+                      {
+                        "opCode": "ldarg",
+                        "operand": {
+                          "argumentName": "ex"
+                        }
+                      },
+                      {
+                        "opCode": "callvirt",
+                        "operand": {
+                          "method": {
+                            "declaringType": "System.Object",
+                            "name": "ToString",
+                            "returnType": "System.string",
+                            "parameterTypes": []
+                          }
+                        }
+                      },
+                      {
+                        "opCode": "call",
+                        "operand": {
+                          "method": {
+                            "declaringType": "System.string",
+                            "name": "Concat",
+                            "returnType": "System.string",
+                            "parameterTypes": [
+                              "System.string",
+                              "System.string"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "opCode": "ldarg",
+                        "operand": {
+                          "argumentName": "Console"
+                        }
+                      },
+                      {
+                        "opCode": "callvirt",
+                        "operand": {
+                          "method": {
+                            "declaringType": "TextWriter",
+                            "name": "WriteLine",
+                            "returnType": "void",
+                            "parameterTypes": [
+                              "System.string"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "opCode": "ldarg",
+                        "operand": {
+                          "argumentName": "ex"
+                        }
+                      },
+                      {
+                        "opCode": "ldarg",
+                        "operand": {
+                          "argumentName": "Console"
+                        }
+                      },
+                      {
+                        "opCode": "callvirt",
+                        "operand": {
+                          "method": {
+                            "declaringType": "TextWriter",
+                            "name": "WriteLine",
+                            "returnType": "void",
+                            "parameterTypes": [
+                              "System.string"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "opCode": "ldc",
+                        "operand": {
+                          "value": "1",
+                          "type": "int32"
+                        }
+                      },
+                      {
+                        "opCode": "ret"
+                      }
+                    ]
+                  }
+                ],
+                "finallyBlock": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "CommandLineParser",
+      "Namespace": "\u003Cglobal namespace\u003E",
+      "Kind": "Class",
+      "Access": 0,
+      "FieldCount": 2,
+      "MethodCount": 3,
+      "Methods": [
+        {
+          "Name": "Parse",
+          "ReturnType": "\u003Cglobal namespace\u003E.CompilerOptions",
+          "ParameterCount": 1,
+          "Parameters": [
+            {
+              "Name": "args",
+              "Type": "System.string[]"
+            }
+          ],
+          "LocalVariables": [
+            {
+              "Name": "options",
+              "Type": "CompilerOptions"
+            },
+            {
+              "Name": "inputFiles",
+              "Type": "List"
+            },
+            {
+              "Name": "i",
+              "Type": "int32"
+            },
+            {
+              "Name": "arg",
+              "Type": "System.string"
+            },
+            {
+              "Name": "fmt",
+              "Type": "System.string"
+            },
+            {
+              "Name": "level",
+              "Type": "System.string"
+            },
+            {
+              "Name": "expandedFiles",
+              "Type": "List"
+            },
+            {
+              "Name": "firstName",
+              "Type": "System.string"
+            }
+          ],
+          "IsStatic": false,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 36,
+          "Instructions": [
+            {
+              "opCode": "newobj",
+              "operand": {
+                "type": "CompilerOptions"
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "args"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "0",
+                "type": "int32"
+              }
+            },
+            {
+              "opCode": "ceq"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "True",
+                      "type": "bool"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "ret"
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "newobj",
+              "operand": {
+                "type": "List\u003Cstring\u003E"
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "inputFiles"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "0",
+                "type": "int32"
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "i"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "i"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "args"
+              }
+            },
+            {
+              "opCode": "clt"
+            },
+            {
+              "opCode": "while",
+              "operand": {
+                "condition": "present",
+                "body": [
+                  {
+                    "opCode": "ldarg",
+                    "operand": {
+                      "argumentName": "args"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "i"
+                    }
+                  },
+                  {
+                    "opCode": "ldelem"
+                  },
+                  {
+                    "opCode": "stloc",
+                    "operand": {
+                      "localName": "arg"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "arg"
+                    }
+                  },
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "-h",
+                      "type": "System.string"
+                    }
+                  },
+                  {
+                    "opCode": "ceq"
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "arg"
+                    }
+                  },
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "--help",
+                      "type": "System.string"
+                    }
+                  },
+                  {
+                    "opCode": "ceq"
+                  },
+                  {
+                    "opCode": "add"
+                  },
+                  {
+                    "opCode": "if",
+                    "operand": {
+                      "thenBlock": [
+                        {
+                          "opCode": "ldc",
+                          "operand": {
+                            "value": "True",
+                            "type": "bool"
+                          }
+                        },
+                        {
+                          "opCode": "ldloc",
+                          "operand": {
+                            "localName": "options"
+                          }
+                        }
+                      ],
+                      "elseBlock": [
+                        {
+                          "opCode": "ldloc",
+                          "operand": {
+                            "localName": "arg"
+                          }
+                        },
+                        {
+                          "opCode": "ldc",
+                          "operand": {
+                            "value": "-v",
+                            "type": "System.string"
+                          }
+                        },
+                        {
+                          "opCode": "ceq"
+                        },
+                        {
+                          "opCode": "ldloc",
+                          "operand": {
+                            "localName": "arg"
+                          }
+                        },
+                        {
+                          "opCode": "ldc",
+                          "operand": {
+                            "value": "--version",
+                            "type": "System.string"
+                          }
+                        },
+                        {
+                          "opCode": "ceq"
+                        },
+                        {
+                          "opCode": "add"
+                        },
+                        {
+                          "opCode": "if",
+                          "operand": {
+                            "thenBlock": [
+                              {
+                                "opCode": "ldc",
+                                "operand": {
+                                  "value": "True",
+                                  "type": "bool"
+                                }
+                              },
+                              {
+                                "opCode": "ldloc",
+                                "operand": {
+                                  "localName": "options"
+                                }
+                              }
+                            ],
+                            "elseBlock": [
+                              {
+                                "opCode": "ldloc",
+                                "operand": {
+                                  "localName": "arg"
+                                }
+                              },
+                              {
+                                "opCode": "ldc",
+                                "operand": {
+                                  "value": "-o",
+                                  "type": "System.string"
+                                }
+                              },
+                              {
+                                "opCode": "ceq"
+                              },
+                              {
+                                "opCode": "ldloc",
+                                "operand": {
+                                  "localName": "arg"
+                                }
+                              },
+                              {
+                                "opCode": "ldc",
+                                "operand": {
+                                  "value": "--output",
+                                  "type": "System.string"
+                                }
+                              },
+                              {
+                                "opCode": "ceq"
+                              },
+                              {
+                                "opCode": "add"
+                              },
+                              {
+                                "opCode": "if",
+                                "operand": {
+                                  "thenBlock": [
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "i"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldc",
+                                      "operand": {
+                                        "value": "1",
+                                        "type": "int32"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "add"
+                                    },
+                                    {
+                                      "opCode": "ldarg",
+                                      "operand": {
+                                        "argumentName": "args"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "cge"
+                                    },
+                                    {
+                                      "opCode": "if",
+                                      "operand": {
+                                        "thenBlock": [
+                                          {
+                                            "opCode": "ldc",
+                                            "operand": {
+                                              "value": "--output requires an argument",
+                                              "type": "System.string"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "newobj",
+                                            "operand": {
+                                              "type": "ArgumentException"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "throw"
+                                          }
+                                        ],
+                                        "elseBlock": null
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldarg",
+                                      "operand": {
+                                        "argumentName": "args"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "i"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldc",
+                                      "operand": {
+                                        "value": "1",
+                                        "type": "int32"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "add"
+                                    },
+                                    {
+                                      "opCode": "stloc",
+                                      "operand": {
+                                        "localName": "i"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "i"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldelem"
+                                    },
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "options"
+                                      }
+                                    }
+                                  ],
+                                  "elseBlock": [
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "arg"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldc",
+                                      "operand": {
+                                        "value": "-m",
+                                        "type": "System.string"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ceq"
+                                    },
+                                    {
+                                      "opCode": "ldloc",
+                                      "operand": {
+                                        "localName": "arg"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ldc",
+                                      "operand": {
+                                        "value": "--module",
+                                        "type": "System.string"
+                                      }
+                                    },
+                                    {
+                                      "opCode": "ceq"
+                                    },
+                                    {
+                                      "opCode": "add"
+                                    },
+                                    {
+                                      "opCode": "if",
+                                      "operand": {
+                                        "thenBlock": [
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "i"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldc",
+                                            "operand": {
+                                              "value": "1",
+                                              "type": "int32"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "add"
+                                          },
+                                          {
+                                            "opCode": "ldarg",
+                                            "operand": {
+                                              "argumentName": "args"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "cge"
+                                          },
+                                          {
+                                            "opCode": "if",
+                                            "operand": {
+                                              "thenBlock": [
+                                                {
+                                                  "opCode": "ldc",
+                                                  "operand": {
+                                                    "value": "--module requires an argument",
+                                                    "type": "System.string"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "newobj",
+                                                  "operand": {
+                                                    "type": "ArgumentException"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "throw"
+                                                }
+                                              ],
+                                              "elseBlock": null
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldarg",
+                                            "operand": {
+                                              "argumentName": "args"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "i"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldc",
+                                            "operand": {
+                                              "value": "1",
+                                              "type": "int32"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "add"
+                                          },
+                                          {
+                                            "opCode": "stloc",
+                                            "operand": {
+                                              "localName": "i"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "i"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldelem"
+                                          },
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "options"
+                                            }
+                                          }
+                                        ],
+                                        "elseBlock": [
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "arg"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldc",
+                                            "operand": {
+                                              "value": "-f",
+                                              "type": "System.string"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ceq"
+                                          },
+                                          {
+                                            "opCode": "ldloc",
+                                            "operand": {
+                                              "localName": "arg"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ldc",
+                                            "operand": {
+                                              "value": "--format",
+                                              "type": "System.string"
+                                            }
+                                          },
+                                          {
+                                            "opCode": "ceq"
+                                          },
+                                          {
+                                            "opCode": "add"
+                                          },
+                                          {
+                                            "opCode": "if",
+                                            "operand": {
+                                              "thenBlock": [
+                                                {
+                                                  "opCode": "ldloc",
+                                                  "operand": {
+                                                    "localName": "i"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldc",
+                                                  "operand": {
+                                                    "value": "1",
+                                                    "type": "int32"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "add"
+                                                },
+                                                {
+                                                  "opCode": "ldarg",
+                                                  "operand": {
+                                                    "argumentName": "args"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "cge"
+                                                },
+                                                {
+                                                  "opCode": "if",
+                                                  "operand": {
+                                                    "thenBlock": [
+                                                      {
+                                                        "opCode": "ldc",
+                                                        "operand": {
+                                                          "value": "--format requires an argument",
+                                                          "type": "System.string"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "newobj",
+                                                        "operand": {
+                                                          "type": "ArgumentException"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "throw"
+                                                      }
+                                                    ],
+                                                    "elseBlock": null
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldarg",
+                                                  "operand": {
+                                                    "argumentName": "args"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldloc",
+                                                  "operand": {
+                                                    "localName": "i"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldc",
+                                                  "operand": {
+                                                    "value": "1",
+                                                    "type": "int32"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "add"
+                                                },
+                                                {
+                                                  "opCode": "stloc",
+                                                  "operand": {
+                                                    "localName": "i"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldloc",
+                                                  "operand": {
+                                                    "localName": "i"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldelem"
+                                                },
+                                                {
+                                                  "opCode": "callvirt",
+                                                  "operand": {
+                                                    "method": {
+                                                      "declaringType": "System.string",
+                                                      "name": "ToLower",
+                                                      "returnType": "System.string",
+                                                      "parameterTypes": []
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "stloc",
+                                                  "operand": {
+                                                    "localName": "fmt"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldloc",
+                                                  "operand": {
+                                                    "localName": "options"
+                                                  }
+                                                }
+                                              ],
+                                              "elseBlock": [
+                                                {
+                                                  "opCode": "ldloc",
+                                                  "operand": {
+                                                    "localName": "arg"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ldc",
+                                                  "operand": {
+                                                    "value": "--verbosity",
+                                                    "type": "System.string"
+                                                  }
+                                                },
+                                                {
+                                                  "opCode": "ceq"
+                                                },
+                                                {
+                                                  "opCode": "if",
+                                                  "operand": {
+                                                    "thenBlock": [
+                                                      {
+                                                        "opCode": "ldloc",
+                                                        "operand": {
+                                                          "localName": "i"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldc",
+                                                        "operand": {
+                                                          "value": "1",
+                                                          "type": "int32"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "add"
+                                                      },
+                                                      {
+                                                        "opCode": "ldarg",
+                                                        "operand": {
+                                                          "argumentName": "args"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "cge"
+                                                      },
+                                                      {
+                                                        "opCode": "if",
+                                                        "operand": {
+                                                          "thenBlock": [
+                                                            {
+                                                              "opCode": "ldc",
+                                                              "operand": {
+                                                                "value": "--verbosity requires an argument",
+                                                                "type": "System.string"
+                                                              }
+                                                            },
+                                                            {
+                                                              "opCode": "newobj",
+                                                              "operand": {
+                                                                "type": "ArgumentException"
+                                                              }
+                                                            },
+                                                            {
+                                                              "opCode": "throw"
+                                                            }
+                                                          ],
+                                                          "elseBlock": null
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldarg",
+                                                        "operand": {
+                                                          "argumentName": "args"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldloc",
+                                                        "operand": {
+                                                          "localName": "i"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldc",
+                                                        "operand": {
+                                                          "value": "1",
+                                                          "type": "int32"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "add"
+                                                      },
+                                                      {
+                                                        "opCode": "stloc",
+                                                        "operand": {
+                                                          "localName": "i"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldloc",
+                                                        "operand": {
+                                                          "localName": "i"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldelem"
+                                                      },
+                                                      {
+                                                        "opCode": "callvirt",
+                                                        "operand": {
+                                                          "method": {
+                                                            "declaringType": "System.string",
+                                                            "name": "ToLower",
+                                                            "returnType": "System.string",
+                                                            "parameterTypes": []
+                                                          }
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "stloc",
+                                                        "operand": {
+                                                          "localName": "level"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldloc",
+                                                        "operand": {
+                                                          "localName": "options"
+                                                        }
+                                                      }
+                                                    ],
+                                                    "elseBlock": [
+                                                      {
+                                                        "opCode": "ldloc",
+                                                        "operand": {
+                                                          "localName": "arg"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ldc",
+                                                        "operand": {
+                                                          "value": "--debug",
+                                                          "type": "System.string"
+                                                        }
+                                                      },
+                                                      {
+                                                        "opCode": "ceq"
+                                                      },
+                                                      {
+                                                        "opCode": "if",
+                                                        "operand": {
+                                                          "thenBlock": [
+                                                            {
+                                                              "opCode": "ldc",
+                                                              "operand": {
+                                                                "value": "True",
+                                                                "type": "bool"
+                                                              }
+                                                            },
+                                                            {
+                                                              "opCode": "ldloc",
+                                                              "operand": {
+                                                                "localName": "options"
+                                                              }
+                                                            }
+                                                          ],
+                                                          "elseBlock": [
+                                                            {
+                                                              "opCode": "ldloc",
+                                                              "operand": {
+                                                                "localName": "arg"
+                                                              }
+                                                            },
+                                                            {
+                                                              "opCode": "ldc",
+                                                              "operand": {
+                                                                "value": "--no-optimize",
+                                                                "type": "System.string"
+                                                              }
+                                                            },
+                                                            {
+                                                              "opCode": "ceq"
+                                                            },
+                                                            {
+                                                              "opCode": "if",
+                                                              "operand": {
+                                                                "thenBlock": [
+                                                                  {
+                                                                    "opCode": "ldc",
+                                                                    "operand": {
+                                                                      "value": "False",
+                                                                      "type": "bool"
+                                                                    }
+                                                                  },
+                                                                  {
+                                                                    "opCode": "ldloc",
+                                                                    "operand": {
+                                                                      "localName": "options"
+                                                                    }
+                                                                  }
+                                                                ],
+                                                                "elseBlock": [
+                                                                  {
+                                                                    "opCode": "ldloc",
+                                                                    "operand": {
+                                                                      "localName": "arg"
+                                                                    }
+                                                                  },
+                                                                  {
+                                                                    "opCode": "ldc",
+                                                                    "operand": {
+                                                                      "value": "--warnings-as-errors",
+                                                                      "type": "System.string"
+                                                                    }
+                                                                  },
+                                                                  {
+                                                                    "opCode": "ceq"
+                                                                  },
+                                                                  {
+                                                                    "opCode": "if",
+                                                                    "operand": {
+                                                                      "thenBlock": [
+                                                                        {
+                                                                          "opCode": "ldc",
+                                                                          "operand": {
+                                                                            "value": "True",
+                                                                            "type": "bool"
+                                                                          }
+                                                                        },
+                                                                        {
+                                                                          "opCode": "ldloc",
+                                                                          "operand": {
+                                                                            "localName": "options"
+                                                                          }
+                                                                        }
+                                                                      ],
+                                                                      "elseBlock": [
+                                                                        {
+                                                                          "opCode": "ldloc",
+                                                                          "operand": {
+                                                                            "localName": "arg"
+                                                                          }
+                                                                        },
+                                                                        {
+                                                                          "opCode": "ldc",
+                                                                          "operand": {
+                                                                            "value": "--aggressive-bootstrap",
+                                                                            "type": "System.string"
+                                                                          }
+                                                                        },
+                                                                        {
+                                                                          "opCode": "ceq"
+                                                                        },
+                                                                        {
+                                                                          "opCode": "if",
+                                                                          "operand": {
+                                                                            "thenBlock": [
+                                                                              {
+                                                                                "opCode": "ldc",
+                                                                                "operand": {
+                                                                                  "value": "True",
+                                                                                  "type": "bool"
+                                                                                }
+                                                                              },
+                                                                              {
+                                                                                "opCode": "ldloc",
+                                                                                "operand": {
+                                                                                  "localName": "options"
+                                                                                }
+                                                                              }
+                                                                            ],
+                                                                            "elseBlock": [
+                                                                              {
+                                                                                "opCode": "ldc",
+                                                                                "operand": {
+                                                                                  "value": "-",
+                                                                                  "type": "System.string"
+                                                                                }
+                                                                              },
+                                                                              {
+                                                                                "opCode": "ldloc",
+                                                                                "operand": {
+                                                                                  "localName": "arg"
+                                                                                }
+                                                                              },
+                                                                              {
+                                                                                "opCode": "callvirt",
+                                                                                "operand": {
+                                                                                  "method": {
+                                                                                    "declaringType": "System.string",
+                                                                                    "name": "StartsWith",
+                                                                                    "returnType": "bool",
+                                                                                    "parameterTypes": [
+                                                                                      "System.string"
+                                                                                    ]
+                                                                                  }
+                                                                                }
+                                                                              },
+                                                                              {
+                                                                                "opCode": "if",
+                                                                                "operand": {
+                                                                                  "thenBlock": [
+                                                                                    {
+                                                                                      "opCode": "ldc",
+                                                                                      "operand": {
+                                                                                        "value": "Unknown option: ",
+                                                                                        "type": "System.string"
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "ldloc",
+                                                                                      "operand": {
+                                                                                        "localName": "arg"
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "callvirt",
+                                                                                      "operand": {
+                                                                                        "method": {
+                                                                                          "declaringType": "System.Object",
+                                                                                          "name": "ToString",
+                                                                                          "returnType": "System.string",
+                                                                                          "parameterTypes": []
+                                                                                        }
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "call",
+                                                                                      "operand": {
+                                                                                        "method": {
+                                                                                          "declaringType": "System.string",
+                                                                                          "name": "Concat",
+                                                                                          "returnType": "System.string",
+                                                                                          "parameterTypes": [
+                                                                                            "System.string",
+                                                                                            "System.string"
+                                                                                          ]
+                                                                                        }
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "newobj",
+                                                                                      "operand": {
+                                                                                        "type": "ArgumentException"
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "throw"
+                                                                                    }
+                                                                                  ],
+                                                                                  "elseBlock": [
+                                                                                    {
+                                                                                      "opCode": "ldloc",
+                                                                                      "operand": {
+                                                                                        "localName": "arg"
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "ldloc",
+                                                                                      "operand": {
+                                                                                        "localName": "inputFiles"
+                                                                                      }
+                                                                                    },
+                                                                                    {
+                                                                                      "opCode": "callvirt",
+                                                                                      "operand": {
+                                                                                        "method": {
+                                                                                          "declaringType": "List",
+                                                                                          "name": "Add",
+                                                                                          "returnType": "void",
+                                                                                          "parameterTypes": [
+                                                                                            "System.string"
+                                                                                          ]
+                                                                                        }
+                                                                                      }
+                                                                                    }
+                                                                                  ]
+                                                                                }
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "i"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "i"
+                    }
+                  },
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "1",
+                      "type": "int32"
+                    }
+                  },
+                  {
+                    "opCode": "add"
+                  },
+                  {
+                    "opCode": "stloc",
+                    "operand": {
+                      "localName": "i"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "add"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "ret"
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "inputFiles"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "0",
+                "type": "int32"
+              }
+            },
+            {
+              "opCode": "ceq"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "At least one input file must be specified",
+                      "type": "System.string"
+                    }
+                  },
+                  {
+                    "opCode": "newobj",
+                    "operand": {
+                      "type": "ArgumentException"
+                    }
+                  },
+                  {
+                    "opCode": "throw"
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "newobj",
+              "operand": {
+                "type": "List\u003Cstring\u003E"
+              }
+            },
+            {
+              "opCode": "stloc",
+              "operand": {
+                "localName": "expandedFiles"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "expandedFiles"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "0",
+                "type": "object"
+              }
+            },
+            {
+              "opCode": "ceq"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "ldc",
+                    "operand": {
+                      "value": "0",
+                      "type": "int32"
+                    }
+                  },
+                  {
+                    "opCode": "ldelem"
+                  },
+                  {
+                    "opCode": "call",
+                    "operand": {
+                      "method": {
+                        "declaringType": "Path",
+                        "name": "GetFileNameWithoutExtension",
+                        "returnType": "System.string",
+                        "parameterTypes": [
+                          "System.string"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "opCode": "stloc",
+                    "operand": {
+                      "localName": "firstName"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "firstName"
+                    }
+                  },
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "Directory",
+                  "name": "Exists",
+                  "returnType": "bool",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "not"
+            },
+            {
+              "opCode": "if",
+              "operand": {
+                "thenBlock": [
+                  {
+                    "opCode": "ldloc",
+                    "operand": {
+                      "localName": "options"
+                    }
+                  },
+                  {
+                    "opCode": "call",
+                    "operand": {
+                      "method": {
+                        "declaringType": "Directory",
+                        "name": "CreateDirectory",
+                        "returnType": "DirectoryInfo",
+                        "parameterTypes": [
+                          "System.string"
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "elseBlock": null
+              }
+            },
+            {
+              "opCode": "ldloc",
+              "operand": {
+                "localName": "options"
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "PrintHelp",
+          "ReturnType": "void",
+          "ParameterCount": 0,
+          "Parameters": [],
+          "LocalVariables": [],
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 3,
+          "Instructions": [
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "USAGE"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        },
+        {
+          "Name": "PrintVersion",
+          "ReturnType": "void",
+          "ParameterCount": 0,
+          "Parameters": [],
+          "LocalVariables": [],
+          "IsStatic": true,
+          "IsVirtual": false,
+          "IsAbstract": false,
+          "InstructionCount": 6,
+          "Instructions": [
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "csharp-to-objectir version ",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "ldarg",
+              "operand": {
+                "argumentName": "VERSION"
+              }
+            },
+            {
+              "opCode": "callvirt",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Object",
+                  "name": "ToString",
+                  "returnType": "System.string",
+                  "parameterTypes": []
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.string",
+                  "name": "Concat",
+                  "returnType": "System.string",
+                  "parameterTypes": [
+                    "System.string",
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "System.string"
+                  ]
+                }
+              }
+            },
+            {
+              "opCode": "ret"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "CompilerOptions",
+      "Namespace": "\u003Cglobal namespace\u003E",
+      "Kind": "Class",
+      "Access": 0,
+      "FieldCount": 0,
+      "MethodCount": 0,
+      "Methods": []
+    },
+    {
+      "Name": "OutputFormat",
+      "Namespace": "",
+      "Kind": "Enum",
+      "Access": 0
+    },
+    {
+      "Name": "VerbosityLevel",
+      "Namespace": "",
+      "Kind": "Enum",
+      "Access": 0
+    }
+  ]
+}

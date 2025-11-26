@@ -1,0 +1,63 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "metadata": {},
+  "types": [
+    {
+      "kind": "Class",
+      "name": "Program",
+      "namespace": "\u003Cglobal namespace\u003E",
+      "access": "Internal",
+      "isAbstract": false,
+      "isSealed": false,
+      "interfaces": [],
+      "baseInterfaces": [],
+      "genericParameters": [],
+      "fields": [],
+      "methods": [
+        {
+          "name": "Main",
+          "returnType": "void",
+          "access": "Public",
+          "isStatic": true,
+          "isVirtual": false,
+          "isOverride": false,
+          "isAbstract": false,
+          "isConstructor": false,
+          "parameters": [
+            {
+              "name": "args",
+              "type": "System.string[]"
+            }
+          ],
+          "localVariables": [],
+          "instructionCount": 2,
+          "instructions": [
+            {
+              "opCode": "ldc",
+              "operand": {
+                "value": "Hello, World!",
+                "type": "System.string"
+              }
+            },
+            {
+              "opCode": "call",
+              "operand": {
+                "method": {
+                  "declaringType": "System.Console",
+                  "name": "WriteLine",
+                  "returnType": "void",
+                  "parameterTypes": [
+                    "string?"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": []
+    }
+  ],
+  "functions": []
+}

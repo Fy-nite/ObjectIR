@@ -232,6 +232,36 @@ public sealed class InstructionSerializer
                     Body = wi.Body.Select(CreateInstructionData).ToList()
                 }
             },
+            IfInstruction ii => new InstructionData
+            {
+                OpCode = "if",
+                Operand = new IfOperandData
+                {
+                    Condition = SerializeConditionData(ii.Condition),
+                    ThenBlock = ii.ThenBlock.Select(CreateInstructionData).ToList(),
+                    ElseBlock = ii.ElseBlock.Count > 0 ? ii.ElseBlock.Select(CreateInstructionData).ToList() : null
+                }
+            },
+            LoadElementInstruction => new InstructionData
+            {
+                OpCode = "ldelem",
+                Operand = null
+            },
+            StoreElementInstruction => new InstructionData
+            {
+                OpCode = "stelem",
+                Operand = null
+            },
+            UnaryNegateInstruction => new InstructionData
+            {
+                OpCode = "neg",
+                Operand = null
+            },
+            UnaryNotInstruction => new InstructionData
+            {
+                OpCode = "not",
+                Operand = null
+            },
             _ => throw new NotSupportedException($"Instruction type {instruction.GetType().Name} not supported for serialization")
         };
     }
@@ -323,6 +353,11 @@ public sealed class InstructionSerializer
             "break" => new BreakInstruction(),
             "continue" => new ContinueInstruction(),
             "while" => DeserializeWhileInstruction(operand),
+            "if" => DeserializeIfInstruction(operand),
+            "ldelem" => new LoadElementInstruction(),
+            "stelem" => new StoreElementInstruction(),
+            "neg" => new UnaryNegateInstruction(),
+            "not" => new UnaryNotInstruction(),
             _ => throw new NotSupportedException($"OpCode '{opCode}' not supported for deserialization")
         };
     }
@@ -380,6 +415,33 @@ public sealed class InstructionSerializer
         whileInstruction.Body.AddRange(bodyInstructions);
 
         return whileInstruction;
+    }
+
+    private static IfInstruction DeserializeIfInstruction(JsonElement? operand)
+    {
+        if (operand == null || operand.Value.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("If instruction operand must be an object");
+        }
+
+        var ifElement = operand.Value;
+        var ifInstruction = new IfInstruction(Condition.Stack());
+
+        // Deserialize then block
+        if (ifElement.TryGetProperty("thenBlock", out var thenElement))
+        {
+            var thenInstructions = DeserializeInstructions(thenElement);
+            ifInstruction.ThenBlock.AddRange(thenInstructions);
+        }
+
+        // Deserialize else block if present
+        if (ifElement.TryGetProperty("elseBlock", out var elseElement))
+        {
+            var elseInstructions = DeserializeInstructions(elseElement);
+            ifInstruction.ElseBlock.AddRange(elseInstructions);
+        }
+
+        return ifInstruction;
     }
 
     private static Condition DeserializeCondition(JsonElement element)
@@ -491,5 +553,17 @@ public sealed class InstructionSerializer
 
         [JsonPropertyName("body")]
         public List<InstructionData> Body { get; set; } = new();
+    }
+
+    private sealed class IfOperandData
+    {
+        [JsonPropertyName("condition")]
+        public ConditionData Condition { get; set; } = new();
+
+        [JsonPropertyName("thenBlock")]
+        public List<InstructionData> ThenBlock { get; set; } = new();
+
+        [JsonPropertyName("elseBlock")]
+        public List<InstructionData>? ElseBlock { get; set; }
     }
 }

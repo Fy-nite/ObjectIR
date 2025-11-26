@@ -206,6 +206,8 @@ OpCode InstructionExecutor::ParseOpCode(const std::string& opStr) {
     if (opStr == "brtrue") return OpCode::BrTrue;
     if (opStr == "brfalse") return OpCode::BrFalse;
     
+    if (opStr == "if") return OpCode::If;
+    
     if (opStr == "newobj") return OpCode::NewObj;
     if (opStr == "call") return OpCode::Call;
     if (opStr == "callvirt") return OpCode::CallVirt;
@@ -306,6 +308,21 @@ Instruction InstructionExecutor::ParseJsonInstruction(const json& instrJson) {
                 data.body = ParseInstructionArray(operand.at("body"));
             }
             instr.whileData = std::move(data);
+            break;
+        }
+
+        case OpCode::If: {
+            if (!operand.is_object()) {
+                throw std::runtime_error("If instruction operand must be object");
+            }
+            Instruction::IfData data;
+            if (operand.contains("thenBlock")) {
+                data.thenBlock = ParseInstructionArray(operand.at("thenBlock"));
+            }
+            if (operand.contains("elseBlock")) {
+                data.elseBlock = ParseInstructionArray(operand.at("elseBlock"));
+            }
+            instr.ifData = std::move(data);
             break;
         }
 
@@ -474,15 +491,15 @@ void InstructionExecutor::Execute(
 
             if (target.declaringType == "System.Console" && target.name == "WriteLine") {
                 if (callArgs.empty()) {
-                    std::cout << std::endl;
+                    vm->WriteOutput("\n");
                 } else {
                     for (size_t i = 0; i < callArgs.size(); ++i) {
                         if (i > 0) {
-                            std::cout << ' ';
+                            vm->WriteOutput(" ");
                         }
-                        std::cout << ValueToString(callArgs[i]);
+                        vm->WriteOutput(ValueToString(callArgs[i]));
                     }
-                    std::cout << std::endl;
+                    vm->WriteOutput("\n");
                 }
                 break;
             }
@@ -529,6 +546,31 @@ void InstructionExecutor::Execute(
                     continue;
                 } catch (const BreakSignal&) {
                     break;
+                }
+            }
+            break;
+        }
+
+        case OpCode::If: {
+            if (!instr.ifData.has_value()) {
+                throw std::runtime_error("If instruction missing metadata");
+            }
+
+            const auto& ifData = instr.ifData.value();
+
+            // Pop the condition value from the stack
+            Value conditionValue = context->PopStack();
+            bool condition = conditionValue.AsBool();
+
+            if (condition) {
+                // Execute then block
+                for (const auto& thenInstr : ifData.thenBlock) {
+                    Execute(thenInstr, context, vm);
+                }
+            } else if (!ifData.elseBlock.empty()) {
+                // Execute else block if present
+                for (const auto& elseInstr : ifData.elseBlock) {
+                    Execute(elseInstr, context, vm);
                 }
             }
             break;

@@ -38,7 +38,8 @@ public sealed class ModuleSerializer
         var data = DumpModule();
         var options = new JsonSerializerOptions
         {
-          WriteIndented = indented,
+            WriteIndented = indented,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         };
         return JsonSerializer.Serialize(data, options);
@@ -359,7 +360,19 @@ Name = property.Name,
     /// </summary>
     public static Module LoadFromJson(string json)
     {
-        var data = JsonSerializer.Deserialize<ModuleData>(json) ?? throw new InvalidOperationException("Failed to deserialize module data");
+        // Validate JSON against schema before deserializing
+        var validationResult = JsonValidator.Validate(json);
+        if (!validationResult.IsValid)
+        {
+            throw new JsonValidationException($"Invalid ObjectIR module JSON: {validationResult.ErrorMessage}");
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+        var data = JsonSerializer.Deserialize<ModuleData>(json, options) ?? throw new InvalidOperationException("Failed to deserialize module data");
         return LoadModule(data);
     }
 

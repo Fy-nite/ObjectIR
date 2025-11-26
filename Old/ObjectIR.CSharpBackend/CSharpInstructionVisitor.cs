@@ -582,4 +582,31 @@ _generator.WriteLine($"var {tempVar} = {obj}.{instruction.Method.Name}({argStrin
 
        return qualified;
     }
+
+    public void Visit(LoadElementInstruction instruction)
+    {
+        var index = Pop();
+        var array = Pop();
+        _stack.Push($"{array}[{index}]");
+    }
+
+    public void Visit(StoreElementInstruction instruction)
+    {
+        var value = Pop();
+        var index = Pop();
+        var array = Pop();
+        _generator.WriteLine($"{array}[{index}] = {value};");
+    }
+
+    public void Visit(UnaryNegateInstruction instruction)
+    {
+        var value = Pop();
+        _stack.Push($"-({value})");
+    }
+
+    public void Visit(UnaryNotInstruction instruction)
+    {
+        var value = Pop();
+        _stack.Push($"!({value})");
+    }
 }

@@ -23,9 +23,19 @@ class Program
             // Load the module from JSON
             Module module = ModuleSerializer.LoadFromJson(json);
 
-            // Generate C# code
-            CSharpCodeGenerator generator = new CSharpCodeGenerator();
-            string code = generator.Generate(module);
+                // Generate C# code. Pass optional second argument `--roslyn` to enable Roslyn formatting.
+                bool useRoslyn = args.Length > 1 && args[1] == "--roslyn";
+                string code;
+                if (useRoslyn)
+                {
+                    var roslynGen = new RoslynCodeGenerator();
+                    code = roslynGen.Generate(module);
+                }
+                else
+                {
+                    CSharpCodeGenerator generator = new CSharpCodeGenerator();
+                    code = generator.Generate(module);
+                }
 
             // Write to output file
             string outputFileName = $"{module.Name}.cs";

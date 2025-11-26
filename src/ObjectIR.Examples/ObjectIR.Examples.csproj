@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ObjectIR.Core\ObjectIR.Core.csproj" />
-    <ProjectReference Include="..\ObjectIR.CSharpBackend\ObjectIR.CSharpBackend.csproj" />
   </ItemGroup>
 
 </Project>

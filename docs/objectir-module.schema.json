@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://objectir.org/schema/module.schema.json",
+  "title": "ObjectIR Module JSON Schema",
+  "description": "Schema for ObjectIR module JSON format used by compilers and runtime",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Module name identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Module version in semantic versioning format"
+    },
+    "typeCount": {
+      "type": "integer",
+      "description": "Number of types in the module"
+    },
+    "types": {
+      "type": "array",
+      "description": "Array of type definitions",
+      "items": {
+        "$ref": "#/$defs/TypeDefinition"
+      }
+    }
+  },
+  "required": ["name", "version", "typeCount", "types"],
+  "additionalProperties": false,
+
+  "$defs": {
+    "TypeDefinition": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Type name"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Type namespace"
+        },
+        "kind": {
+          "enum": ["Class", "Interface", "Struct", "Enum"],
+          "description": "Type kind"
+        },
+        "access": {
+          "type": "integer",
+          "description": "Type access modifier (0=Public, 1=Private, 2=Protected, 3=Internal)"
+        },
+        "fieldCount": {
+          "type": "integer",
+          "description": "Number of fields in the type"
+        },
+        "methodCount": {
+          "type": "integer",
+          "description": "Number of methods in the type"
+        },
+        "methods": {
+          "type": "array",
+          "description": "Type methods",
+          "items": {
+            "$ref": "#/$defs/MethodDefinition"
+          }
+        }
+      },
+      "required": ["name", "namespace", "kind", "access"],
+      "additionalProperties": false
+    },
+
+    "MethodDefinition": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Method name"
+        },
+        "returnType": {
+          "type": "string",
+          "description": "Return type name"
+        },
+        "parameterCount": {
+          "type": "integer",
+          "description": "Number of parameters"
+        },
+        "parameters": {
+          "type": "array",
+          "description": "Method parameters",
+          "items": {
+            "$ref": "#/$defs/ParameterDefinition"
+          }
+        },
+        "localVariables": {
+          "type": "array",
+          "description": "Local variables",
+          "items": {
+            "$ref": "#/$defs/LocalVariableDefinition"
+          }
+        },
+        "isStatic": {
+          "type": "boolean",
+          "description": "Whether the method is static"
+        },
+        "isVirtual": {
+          "type": "boolean",
+          "description": "Whether the method is virtual"
+        },
+        "isAbstract": {
+          "type": "boolean",
+          "description": "Whether the method is abstract"
+        },
+        "instructionCount": {
+          "type": "integer",
+          "description": "Number of instructions"
+        },
+        "instructions": {
+          "type": "array",
+          "description": "Method instructions",
+          "items": {
+            "$ref": "#/$defs/InstructionDefinition"
+          }
+        }
+      },
+      "required": ["name", "returnType", "parameterCount", "parameters", "localVariables", "isStatic", "isVirtual", "isAbstract", "instructionCount", "instructions"],
+      "additionalProperties": false
+    },
+
+    "ParameterDefinition": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Parameter type name"
+        }
+      },
+      "required": ["name", "type"],
+      "additionalProperties": false
+    },
+
+    "LocalVariableDefinition": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Local variable name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Local variable type name"
+        }
+      },
+      "required": ["name", "type"],
+      "additionalProperties": false
+    },
+
+    "InstructionDefinition": {
+      "type": "object",
+      "properties": {
+        "opCode": {
+          "type": "string",
+          "description": "Operation code"
+        },
+        "operand": {
+          "description": "Optional instruction operand"
+        }
+      },
+      "required": ["opCode"],
+      "additionalProperties": false
+    },
+
+    "MethodReference": {
+      "type": "object",
+      "properties": {
+        "declaringType": { "type": "string" },
+        "name": { "type": "string" },
+        "returnType": { "type": "string" },
+        "parameterTypes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["declaringType", "name", "returnType", "parameterTypes"],
+      "additionalProperties": false
+    },
+
+    "FieldReference": {
+      "type": "object",
+      "properties": {
+        "declaringType": { "type": "string" },
+        "name": { "type": "string" },
+        "fieldType": { "type": "string" }
+      },
+      "required": ["declaringType", "name", "fieldType"],
+      "additionalProperties": false
+    }
+  }
+}

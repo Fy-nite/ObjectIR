@@ -50,6 +50,10 @@ public interface IInstructionVisitor
     void Visit(ContinueInstruction instruction);
     void Visit(TryInstruction instruction);
     void Visit(ThrowInstruction instruction);
+    void Visit(LoadElementInstruction instruction);
+    void Visit(StoreElementInstruction instruction);
+    void Visit(UnaryNegateInstruction instruction);
+    void Visit(UnaryNotInstruction instruction);
 }
 
 /// <summary>

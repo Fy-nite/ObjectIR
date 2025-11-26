@@ -75,6 +75,9 @@ void IRLoader::LoadTypes(std::shared_ptr<VirtualMachine> vm, const json& typesAr
 
 void IRLoader::LoadTypeDefinition(std::shared_ptr<VirtualMachine> vm, const json& typeJson) {
     std::string kind = typeJson["kind"];
+    // Convert to lowercase for case-insensitive comparison
+    std::transform(kind.begin(), kind.end(), kind.begin(), ::tolower);
+    
     if (kind == "class") {
         LoadClass(vm, typeJson);
     } else if (kind == "interface") {
@@ -89,8 +92,8 @@ ClassRef IRLoader::LoadClass(std::shared_ptr<VirtualMachine> vm, const json& cla
     std::string ns = classJson.value("namespace", "");
 
     std::string fullName = GetFQTypeName(name, ns);
-    auto classRef = std::make_shared<Class>(fullName);
-    classRef->SetNamespace(ns);
+    auto classRef = std::make_shared<Class>(name);  // Pass simple name to constructor
+    classRef->SetNamespace(ns);  // Set namespace separately
 
     // Load base class if present
     if (classJson.contains("base")) {
@@ -155,10 +158,10 @@ void IRLoader::LoadMethods(ClassRef classRef, const json& methodsArray, std::sha
         }
 
         // Load method body/instructions
-        if (methodJson.contains("body") && methodJson["body"].is_array()) {
+        if (methodJson.contains("instructions") && methodJson["instructions"].is_array()) {
             std::vector<Instruction> instructions;
             int instrCount = 0;
-            for (const auto& instrJson : methodJson["body"]) {
+            for (const auto& instrJson : methodJson["instructions"]) {
                 try {
                     std::cerr << "  [" << name << "] Parsing instruction " << instrCount << ": " 
                               << instrJson.dump() << std::endl;

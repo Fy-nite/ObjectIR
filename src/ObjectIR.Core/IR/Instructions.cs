@@ -306,3 +306,39 @@ public sealed class ConversionInstruction : Instruction
 
     public override void Accept(IInstructionVisitor visitor) => visitor.Visit(this);
 }
+
+// ============================================================================
+// Array Access Instructions
+// ============================================================================
+
+public sealed class LoadElementInstruction : Instruction
+{
+    public LoadElementInstruction() : base(OpCode.Ldelem) { }
+
+    public override void Accept(IInstructionVisitor visitor) => visitor.Visit(this);
+}
+
+public sealed class StoreElementInstruction : Instruction
+{
+    public StoreElementInstruction() : base(OpCode.Stelem) { }
+
+    public override void Accept(IInstructionVisitor visitor) => visitor.Visit(this);
+}
+
+// ============================================================================
+// Unary Instructions
+// ============================================================================
+
+public sealed class UnaryNegateInstruction : Instruction
+{
+    public UnaryNegateInstruction() : base(OpCode.Neg) { }
+
+    public override void Accept(IInstructionVisitor visitor) => visitor.Visit(this);
+}
+
+public sealed class UnaryNotInstruction : Instruction
+{
+    public UnaryNotInstruction() : base(OpCode.Not) { }
+
+    public override void Accept(IInstructionVisitor visitor) => visitor.Visit(this);
+}

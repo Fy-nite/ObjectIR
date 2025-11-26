@@ -18,6 +18,7 @@ public sealed class MethodDefinition
     public bool IsConstructor { get; set; }
     public List<GenericParameter> GenericParameters { get; } = new();
     public MethodReference? ImplementsInterface { get; set; }
+    public string? BodySource { get; set; }
 
     public MethodDefinition(string name, TypeReference returnType)
     {
