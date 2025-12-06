@@ -1103,6 +1103,12 @@ The C++ VM supports these primitive types in text format:
 - **String**: `string`
 - **Void**: `void` (for methods with no return value)
 
+**Note on Instruction Naming**: The load constant instructions use CIL-style naming:
+- `ldc.i4` / `ldc.i8` for integer constants (i4 = 32-bit, i8 = 64-bit)
+- `ldc.r4` / `ldc.r8` for floating-point constants (r4 = float32, r8 = float64)
+
+This naming comes from .NET Common Intermediate Language (CIL) where "i" means integer and "r" means real (floating-point).
+
 Reference types are specified by their fully-qualified names:
 - `System.Console`
 - `System.String`
@@ -1253,7 +1259,7 @@ while (i < 10) {
 ### 5. Comment Complex Logic
 
 ```
-method ComplicateCalculation(x: int32) -> int32 {
+method ComplexCalculation(x: int32) -> int32 {
     // Calculate (x * 2) + (x / 3)
     ldarg x
     ldc.i4 2
