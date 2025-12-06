@@ -6,6 +6,8 @@ This document describes the **text-based instruction format** used by the Object
 
 The text format is distinct from the JSON serialization format (documented in [INSTRUCTION_SERIALIZATION.md](INSTRUCTION_SERIALIZATION.md)). The text format is parsed by the C++ runtime's text parser (`ir_text_parser.cpp`) and is the format used when writing `.ir` files.
 
+**Quick Start**: See [examples/](examples/) for complete working `.ir` files demonstrating these instructions.
+
 ## Instruction Categories
 
 The C++ VM supports several categories of instructions:

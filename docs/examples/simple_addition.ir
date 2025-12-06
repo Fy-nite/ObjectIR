@@ -1,0 +1,41 @@
+module MathLib version 1.0.0
+
+// Simple calculator class demonstrating text-based IR instructions
+class Calculator {
+    // Adds two integers
+    method Add(a: int32, b: int32) -> int32 {
+        ldarg a
+        ldarg b
+        add
+        ret
+    }
+    
+    // Subtracts two integers
+    method Subtract(a: int32, b: int32) -> int32 {
+        ldarg a
+        ldarg b
+        sub
+        ret
+    }
+    
+    // Multiplies two integers
+    method Multiply(a: int32, b: int32) -> int32 {
+        ldarg a
+        ldarg b
+        mul
+        ret
+    }
+    
+    // Demonstrates using local variables
+    method Square(x: int32) -> int32 {
+        local result: int32
+        
+        ldarg x
+        ldarg x
+        mul
+        stloc result
+        
+        ldloc result
+        ret
+    }
+}

@@ -1,0 +1,108 @@
+module Factorial version 1.0.0
+
+// Demonstrates loops and local variables
+class Math {
+    // Calculates factorial using a while loop
+    method Factorial(n: int32) -> int32 {
+        local result: int32
+        local i: int32
+        
+        // Initialize result to 1
+        ldc.i4 1
+        stloc result
+        
+        // Initialize i to 2
+        ldc.i4 2
+        stloc i
+        
+        // Loop from 2 to n
+        while (i <= n) {
+            // result = result * i
+            ldloc result
+            ldloc i
+            mul
+            stloc result
+            
+            // i = i + 1
+            ldloc i
+            ldc.i4 1
+            add
+            stloc i
+        }
+        
+        ldloc result
+        ret
+    }
+    
+    // Demonstrates break statement
+    method FindFirstEven(max: int32) -> int32 {
+        local i: int32
+        ldc.i4 0
+        stloc i
+        
+        while (i < max) {
+            ldloc i
+            ldc.i4 2
+            rem
+            ldc.i4 0
+            ceq
+            
+            if (stack) {
+                ldloc i
+                ret
+            }
+            
+            ldloc i
+            ldc.i4 1
+            add
+            stloc i
+        }
+        
+        // Return -1 if no even number found
+        ldc.i4 -1
+        ret
+    }
+    
+    // Demonstrates continue statement
+    method SumOddNumbers(max: int32) -> int32 {
+        local sum: int32
+        local i: int32
+        
+        ldc.i4 0
+        stloc sum
+        ldc.i4 0
+        stloc i
+        
+        while (i < max) {
+            // Check if even
+            ldloc i
+            ldc.i4 2
+            rem
+            ldc.i4 0
+            ceq
+            
+            if (stack) {
+                // Skip even numbers
+                ldloc i
+                ldc.i4 1
+                add
+                stloc i
+                continue
+            }
+            
+            // Add odd number to sum
+            ldloc sum
+            ldloc i
+            add
+            stloc sum
+            
+            ldloc i
+            ldc.i4 1
+            add
+            stloc i
+        }
+        
+        ldloc sum
+        ret
+    }
+}
