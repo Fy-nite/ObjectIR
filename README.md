@@ -235,6 +235,18 @@ ObjectIR draws inspiration from:
 - **WebAssembly**: Structured control flow
 - **MLIR**: Extensible dialect system
 
+## Documentation
+
+Key documentation files:
+
+- **[Getting Started](docs/GETTING_STARTED.md)** - Introduction and basic usage
+- **[Grammar](docs/GRAMMAR.md)** - Complete formal grammar specification
+- **[VM Instructions (Text Format)](docs/VM_INSTRUCTIONS_TEXT_FORMAT.md)** - Text-based instruction reference for C++ VM
+- **[Instruction Serialization (JSON)](docs/INSTRUCTION_SERIALIZATION.md)** - JSON instruction format
+- **[Architecture](docs/ARCHITECTURE.md)** - System architecture overview
+- **[Module Serialization](docs/MODULE_DUMPING.md)** - Module dump and export formats
+- **[FOB Binary Format](docs/OBJECTIR_FOB_SPEC.md)** - Binary object format specification
+
 ## Getting Help
 
 - Documentation: [docs/](docs/)

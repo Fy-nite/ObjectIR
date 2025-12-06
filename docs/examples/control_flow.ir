@@ -1,0 +1,86 @@
+module ControlFlowDemo version 1.0.0
+
+// Demonstrates control flow instructions
+class FlowControl {
+    // Returns the maximum of two values
+    method Max(a: int32, b: int32) -> int32 {
+        ldarg a
+        ldarg b
+        cgt
+        
+        if (stack) {
+            ldarg a
+            ret
+        } else {
+            ldarg b
+            ret
+        }
+    }
+    
+    // Counts down from n to 1
+    method CountDown(n: int32) -> void {
+        local i: int32
+        ldarg n
+        stloc i
+        
+        while (i > 0) {
+            ldloc i
+            ldc.i4 1
+            sub
+            stloc i
+        }
+        
+        ret
+    }
+    
+    // Checks if a number is even
+    method IsEven(n: int32) -> bool {
+        ldarg n
+        ldc.i4 2
+        rem
+        ldc.i4 0
+        ceq
+        ret
+    }
+    
+    // Demonstrates all comparison operations
+    method CompareValues(a: int32, b: int32) -> void {
+        // Equal
+        ldarg a
+        ldarg b
+        ceq
+        pop
+        
+        // Not equal
+        ldarg a
+        ldarg b
+        cne
+        pop
+        
+        // Less than
+        ldarg a
+        ldarg b
+        clt
+        pop
+        
+        // Less than or equal
+        ldarg a
+        ldarg b
+        cle
+        pop
+        
+        // Greater than
+        ldarg a
+        ldarg b
+        cgt
+        pop
+        
+        // Greater than or equal
+        ldarg a
+        ldarg b
+        cge
+        pop
+        
+        ret
+    }
+}
