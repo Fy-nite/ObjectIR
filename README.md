@@ -62,7 +62,7 @@ Contributions to the documentation are welcome! To suggest changes, report issue
 
 ## License
 
-This documentation is licensed under the AGPL-V3 License. See the [LICENSE](LICENSE) file for details.
+This documentation is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
