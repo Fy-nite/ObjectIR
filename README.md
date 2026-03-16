@@ -22,12 +22,6 @@ ObjectIR is a typed intermediate representation that sits between high-level OOP
 
 ## Quick Start
 
-### Installation
-
-```bash
-dotnet add package ObjectIR.Core
-```
-
 ### Example: Building a Calculator Class
 
 ```csharp
