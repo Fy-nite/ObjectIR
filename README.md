@@ -1,253 +1,80 @@
-# ObjectIR
 
-**Object Intermediate Representation** - A high-level IR for object-oriented languages, inspired by LLVM IR but designed specifically for OOP semantics.
+# ObjectIR Documentation Repository
 
-## Overview
+Welcome to the official documentation repository for **ObjectIR**, a high-level intermediate representation (IR) for object-oriented languages. This repository contains all specifications, guides, and reference materials for ObjectIR, serving as the central resource for users, implementers, and contributors.
 
-ObjectIR is a typed intermediate representation that sits between high-level OOP languages (C#, Java, C++) and their target runtimes. It combines the precision of stack-based IRs like CIL with structured control flow for better readability and tooling support.
+---
 
-**Primary Design:** ObjectIR is primarily designed for execution on its own high-performance runtime, which provides a unified object model and advanced features for analysis, transformation, and cross-language interoperability.
+## About ObjectIR
 
-**Multi-Target Capability:** In addition to its own runtime, ObjectIR can also be compiled to each language's native runtime (such as .NET CIL, JVM bytecode, C++ code, JavaScript, etc.), making it a powerful bridge for multi-platform and multi-language development.
+ObjectIR is a typed, object-oriented intermediate representation designed to bridge high-level OOP languages (such as C#, Java, and C++) with multiple target runtimes. It combines stack-based instructions with structured control flow, enabling advanced analysis, transformation, and cross-language interoperability.
 
-### Key Features
+## Spec
+For the latest Language specification available, check out our website at [https://finite.ovh/PDF/ObjectIR.pdf](https://finite.ovh/PDF/ObjectIR.pdf) (external link).
 
-- **Unified ObjectIR Runtime**: Execute modules directly on the ObjectIR runtime for maximum compatibility and advanced features
-- **Hybrid approach**: CIL-style stack instructions + structured control flow (if/while/for)
-- **Type-safe**: Strongly typed with full generic support
-- **Multi-target**: Compile to .NET CIL, JVM bytecode, JavaScript, C++, Lua, etc.
-- **Standard library**: Built-in generic types (List<T>, Dict<K,V>, Set<T>) that map to native implementations
-- **Builder API**: Fluent C# API for constructing IR programmatically
-- **Extensible**: Easy to add custom backends and optimization passes
+**Note:** This repository contains only documentation and specifications. For source code, examples, and implementation details, see the [Lattice Research Runtime](https://github.com/Fy-nite/lattice) (external link).
 
-## Quick Start
+---
 
-### Example: Building a Calculator Class
+## How to Use This Documentation
 
-```csharp
-using ObjectIR.Core.Builder;
-using ObjectIR.Core.IR;
+- **Start Here:** [Getting Started Guide](docs/GETTING_STARTED.md)
+- **Formal Grammar:** [ObjectIR Grammar](docs/GRAMMAR.md)
+- **Architecture Overview:** [System Architecture](docs/ARCHITECTURE.md)
+- **Instruction Reference:** [VM Instructions (Text Format)](docs/VM_INSTRUCTIONS_TEXT_FORMAT.md) | [Instruction Serialization (JSON)](docs/INSTRUCTION_SERIALIZATION.md)
+- **Module Formats:** [Module Serialization](docs/MODULE_DUMPING.md) | [FOB Binary Format](docs/OBJECTIR_FOB_SPEC.md)
+- **Quick Reference:** [Construct Quick Reference](docs/CONSTRUCT_QUICK_REFERENCE.md)
+- **All Documentation:** [docs/](docs/)
+- **Examples:** [examples/](examples/)
 
-var builder = new IRBuilder("CalculatorApp");
+For the latest updates, see the [CHANGELOG](docs/CHANGELOG.md) (if available).
 
-builder.Class("Calculator")
-    .Field("history", TypeReference.List(TypeReference.Int32)) 
-    .Field("lastResult", TypeReference.Int32)
-    
-    .Method("Add", TypeReference.Int32)
-        .Parameter("a", TypeReference.Int32)
-        .Parameter("b", TypeReference.Int32)
-        .Local("result", TypeReference.Int32)
-        .Body()
-            .Ldarg("a")
-            .Ldarg("b")
-            .Add()
-            .Stloc("result")
-            .Ldloc("result")
-            .Ret()
-        .EndBody()
-        .EndMethod()
-    .EndClass();
 
-var module = builder.Build();
-```
+---
 
-### Generated IR (Text Format)
+## Key Documents
 
-```
-module CalculatorApp
+- [Getting Started](docs/GETTING_STARTED.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Formal Grammar](docs/GRAMMAR.md)
+- [VM Instructions (Text Format)](docs/VM_INSTRUCTIONS_TEXT_FORMAT.md)
+- [Instruction Serialization (JSON)](docs/INSTRUCTION_SERIALIZATION.md)
+- [Module Serialization](docs/MODULE_DUMPING.md)
+- [FOB Binary Format](docs/OBJECTIR_FOB_SPEC.md)
+- [Module Loader](docs/MODULE_LOADER.md)
+- [Specification Index](docs/CONSTRUCT_COMPILER_DOCUMENTATION_INDEX.md)
+- [Fortran 90 Compiler](docs/FORTRAN_90_COMPILER.md)
+- [Language Specification](specs/LANGUAGE_SPEC_v1.md)
 
-class Calculator {
-    field history: List<int32>
-    field lastResult: int32
-    
-    method Add(a: int32, b: int32) -> int32 {
-        local result: int32
-        
-        ldarg a
-        ldarg b
-        add
-        stloc result
-        ldloc result
-        ret
-    }
-}
-```
+---
 
-## Architecture
+---
 
-### Type System
+## Contributing to Documentation
 
-ObjectIR provides a rich type system:
+Contributions to the documentation are welcome! To suggest changes, report issues, or propose new guides/specifications:
 
-- **Primitives**: `void`, `bool`, `int8/16/32/64`, `uint8/16/32/64`, `float32/64`, `char`, `string`
-- **Reference Types**: Classes, interfaces, delegates
-- **Value Types**: Structs, enums
-- **Generics**: Full generic support with constraints
-- **Arrays**: Single and multi-dimensional
+- [Open an Issue](https://github.com/objectir/objectir-docs/issues)
+- [Start a Discussion](https://github.com/objectir/objectir-docs/discussions)
+- See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines (if available)
 
-### Standard Library Types
-
-Built-in generic types that backends must implement:
-
-```csharp
-System.List<T>
-System.Dict<K, V>
-System.Set<T>
-System.Optional<T>
-System.String
-```
-
-### Instruction Set
-
-ObjectIR uses a hybrid instruction set:
-
-**Stack-based operations** (CIL-style):
-- Load/Store: `ldarg`, `ldloc`, `ldfld`, `stloc`, `stfld`
-- Constants: `ldc.i4`, `ldc.r4`, `ldstr`, `ldnull`
-- Arithmetic: `add`, `sub`, `mul`, `div`, `rem`, `neg`
-- Comparison: `ceq`, `cgt`, `clt`
-- Calls: `call`, `callvirt`, `newobj`
-- Stack manipulation: `dup`, `pop`
-
-**Structured control flow** (high-level):
-- `if (condition) { ... } else { ... }`
-- `while (condition) { ... }`
-- `for (init; condition; increment) { ... }`
-- `try { ... } catch (Type ex) { ... } finally { ... }`
-
-## Backend Architecture
-
-Backends implement the `IBackend` interface:
-
-```csharp
-public interface IBackend
-{
-    void Compile(Module module, Stream output);
-    string[] GetSupportedTypes();
-}
-```
-
-Example backends:
-
-- **CSharpBackend**: Generates .NET CIL via System.Reflection.Emit
-- **CppBackend**: Generates C++ with standard library mappings
-- **JavaScriptBackend**: Generates JavaScript with runtime support
-- **LuaBackend**: Generates Lua with metatables for OOP
-
-### Type Mapping Example
-
-| ObjectIR | C# | Java | C++ | JavaScript |
-|----------|-----|------|-----|------------|
-| `List<T>` | `List<T>` | `ArrayList<T>` | `std::vector<T>` | `Array` |
-| `Dict<K,V>` | `Dictionary<K,V>` | `HashMap<K,V>` | `std::unordered_map<K,V>` | `Map` |
-| `string` | `string` | `String` | `std::string` | `string` |
-
-## Supported Language Frontends
-
-Currently supported compilers:
-
-- **Construct Language** (`src/ObjectIR.Core/Compilers/ConstructCompiler.cs`) – High-level procedural language with ObjectIR semantics
-- **Fortran 77 (OIFortran)** (`src/OIFortran/Compiler/`) – Classical scientific programming language
-  - **Phase 1 Status:** Programs, subroutines, scalar arithmetic, basic control flow (IF/ELSE, DO loops), PRINT I/O
-  - **Roadmap:** See [FORTRAN_F77_SPEC.md](docs/FORTRAN_F77_SPEC.md) and [FORTRAN_IMPLEMENTATION_PLAN.md](docs/FORTRAN_IMPLEMENTATION_PLAN.md)
-
-## Use Cases
-
-### Compiler Development
-Build compilers for new languages that target multiple platforms:
-```
-YourLanguage → ObjectIR → C# / C++ / JavaScript / etc.
-```
-
-### Code Analysis & Transformation
-- Static analysis tools
-- Optimization passes
-- Code transformations
-- Security analysis
-
-### Cross-Platform Development
-Write once in ObjectIR, compile to any supported platform.
-
-### Language Interop
-Bridge between different OOP languages with a common IR.
-
-## Project Structure
-
-```
-ObjectIR/
-├── src/
-│   └── ObjectIR.Core/
-│       ├── IR/                  # Core IR types
-│       │   ├── Module.cs
-│       │   ├── TypeDefinition.cs
-│       │   ├── Instruction.cs
-│       │   └── ...
-│       └── Builder/             # Fluent builder API
-│           └── IRBuilder.cs
-├── examples/                    # Example programs
-├── docs/                        # Documentation
-└── tests/                       # Unit tests
-```
-
-## Formal Grammar
-
-See [GRAMMAR.md](docs/GRAMMAR.md) for the complete formal specification.
-
-## Roadmap
-
-- [ ] Core IR implementation ✓ (Done)
-- [ ] Builder API ✓ (Done)
-- [ ] Text format parser
-- [ ] Binary format (for performance) ✓ (FOB format implemented - [see docs](docs/OBJECTIR_FOB_SPEC.md))
-- [ ] C# backend (CIL emission)
-- [ ] JavaScript backend
-- [ ] C++ backend
-- [ ] Standard library definitions
-- [ ] Optimization passes
-- [ ] Debugger support (DWARF, PDB)
-- [ ] LLVM backend (for native compilation)
-
-## Contributing
-
-Contributions welcome! Areas of interest:
-- Backend implementations
-- Optimization passes
-- Standard library expansions
-- Language frontends
+---
 
 ## License
 
-AGPL-V3 License - See LICENSE file for details
+This documentation is licensed under the AGPL-V3 License. See the [LICENSE](LICENSE) file for details.
+
+---
 
 ## Inspiration
 
 ObjectIR draws inspiration from:
-- **LLVM IR**: Modular architecture, SSA form concepts
-- **.NET CIL**: Stack-based operations, rich type system
-- **JVM Bytecode**: Cross-platform vision
-- **WebAssembly**: Structured control flow
-- **MLIR**: Extensible dialect system
-
-## Documentation
-
-Key documentation files:
-
-- **[Getting Started](docs/GETTING_STARTED.md)** - Introduction and basic usage
-- **[Grammar](docs/GRAMMAR.md)** - Complete formal grammar specification
-- **[VM Instructions (Text Format)](docs/VM_INSTRUCTIONS_TEXT_FORMAT.md)** - Text-based instruction reference for C++ VM
-- **[Instruction Serialization (JSON)](docs/INSTRUCTION_SERIALIZATION.md)** - JSON instruction format
-- **[Architecture](docs/ARCHITECTURE.md)** - System architecture overview
-- **[Module Serialization](docs/MODULE_DUMPING.md)** - Module dump and export formats
-- **[FOB Binary Format](docs/OBJECTIR_FOB_SPEC.md)** - Binary object format specification
-
-## Getting Help
-
-- Documentation: [docs/](docs/)
-- Examples: [examples/](examples/)
-- Issues: GitHub Issues
-- Discussions: GitHub Discussions
+- [LLVM IR](https://llvm.org/docs/LangRef.html): Modular architecture, SSA form concepts
+- [.NET CIL](https://docs.microsoft.com/en-us/dotnet/standard/managed-code): Stack-based operations, rich type system
+- [JVM Bytecode](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html): Cross-platform vision
+- [WebAssembly](https://webassembly.org/docs/): Structured control flow
+- [MLIR](https://mlir.llvm.org/): Extensible dialect system
 
 ---
 
-**Status**: Early Development - API subject to change
+**Status:** Early Development — Documentation and specifications are evolving and subject to change.
