@@ -487,4 +487,10 @@ $RECYCLE.BIN/
 *.lnk
 
 # Vim temporary swap files
+# Latex temporary files
 *.swp
+*.aux
+*.toc
+*.synctex.gz
+*.pdf
+*.out

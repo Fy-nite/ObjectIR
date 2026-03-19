@@ -10,7 +10,7 @@ Welcome to the official documentation repository for **ObjectIR**, a high-level 
 ObjectIR is a typed, object-oriented intermediate representation designed to bridge high-level OOP languages (such as C#, Java, and C++) with multiple target runtimes. It combines stack-based instructions with structured control flow, enabling advanced analysis, transformation, and cross-language interoperability.
 
 ## Spec
-For the latest Language specification available, check out our website at [https://finite.ovh/PDF/ObjectIR.pdf](https://finite.ovh/PDF/ObjectIR.pdf) (external link).
+For the latest Language specification available, check out our website at [https://finite.ovh/PDF/ObjectIRV2.pdf](https://finite.ovh/PDF/ObjectIRV2.pdf) (external link).
 
 **Note:** This repository contains only documentation and specifications. For source code, examples, and implementation details, see the [Lattice Research Runtime](https://github.com/Fy-nite/lattice) (external link).
 
@@ -44,7 +44,7 @@ For the latest updates, see the [CHANGELOG](docs/CHANGELOG.md) (if available).
 - [Module Loader](docs/MODULE_LOADER.md)
 - [Specification Index](docs/CONSTRUCT_COMPILER_DOCUMENTATION_INDEX.md)
 - [Fortran 90 Compiler](docs/FORTRAN_90_COMPILER.md)
-- [Language Specification](specs/LANGUAGE_SPEC_v1.md)
+
 
 ---
 
