@@ -3,6 +3,11 @@
 
 Welcome to the official documentation repository for **ObjectIR**, a high-level intermediate representation (IR) for object-oriented languages. This repository contains all specifications, guides, and reference materials for ObjectIR, serving as the central resource for users, implementers, and contributors.
 
+
+##Note
+as we switch to a more unified type system, things here will be out of place.
+please forgive us as we update the repository to include new documentation.
+
 ---
 
 ## About ObjectIR
