@@ -1,0 +1,1450 @@
+% ══════════════════════════════════════════════════════════════════════════════
+%  ObjectIR v2 — Language Specification
+% ══════════════════════════════════════════════════════════════════════════════
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{tabularx}
+\usepackage{mdframed}
+\usepackage{amsmath}
+
+\geometry{margin=2.4cm}
+
+% ── Colors ────────────────────────────────────────────────────────────────────
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codeborder}{HTML}{CCCCCC}
+\definecolor{kw}{HTML}{0000CC}
+\definecolor{str}{HTML}{008800}
+\definecolor{comment}{HTML}{888888}
+\definecolor{typecolor}{HTML}{7B0000}
+\definecolor{linkcolor}{HTML}{0066CC}
+\definecolor{sectionrule}{HTML}{3A6EA5}
+\definecolor{notebg}{HTML}{FFF8DC}
+\definecolor{noteborder}{HTML}{DAA520}
+\definecolor{warnbg}{HTML}{FFF0F0}
+\definecolor{warnborder}{HTML}{CC4444}
+\definecolor{infobg}{HTML}{EEF4FF}
+\definecolor{infoborder}{HTML}{5577CC}
+
+% ── Hyperref ──────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkcolor,
+  urlcolor=linkcolor,
+  citecolor=linkcolor,
+  pdftitle={ObjectIR v2 --- Language Specification},
+  pdfauthor={ObjectIR Project},
+}
+
+% ── Code listing styles ───────────────────────────────────────────────────────
+\lstdefinelanguage{TextIR}{
+  morekeywords={module,version,class,interface,struct,enum,field,method,
+                constructor,local,public,private,protected,internal,static,
+                virtual,override,abstract,sealed,implements,else,catch,finally,
+                true,false,null},
+  morestring=[b]",
+  morecomment=[l]{//},
+  sensitive=true
+}
+
+\lstdefinestyle{textir}{
+  language=TextIR,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{kw},
+  stringstyle=\color{str},
+  commentstyle=\itshape\color{comment},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  numbers=left,
+  numberstyle=\tiny\color{comment},
+  numbersep=6pt,
+  xleftmargin=1.8em,
+}
+
+\lstdefinestyle{pseudo}{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  numbers=none,
+}
+
+\lstdefinestyle{json}{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  stringstyle=\color{str},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  numbers=none,
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\typename}[1]{\textcolor{typecolor}{\texttt{\small #1}}}
+\newcommand{\kword}[1]{\textbf{\texttt{\small #1}}}
+\newcommand{\opcode}[1]{\textbf{\texttt{#1}}}
+\newcommand{\nterm}[1]{\textit{$\langle$#1$\rangle$}}
+\newcommand{\term}[1]{\texttt{#1}}
+
+% ── Callout boxes ─────────────────────────────────────────────────────────────
+\newmdenv[
+  backgroundcolor=notebg, linecolor=noteborder, linewidth=1pt,
+  innerleftmargin=8pt, innerrightmargin=8pt,
+  innertopmargin=6pt, innerbottommargin=6pt,
+  skipabove=6pt, skipbelow=6pt,
+]{notebox}
+
+\newmdenv[
+  backgroundcolor=warnbg, linecolor=warnborder, linewidth=1pt,
+  innerleftmargin=8pt, innerrightmargin=8pt,
+  innertopmargin=6pt, innerbottommargin=6pt,
+  skipabove=6pt, skipbelow=6pt,
+]{warnbox}
+
+\newmdenv[
+  backgroundcolor=infobg, linecolor=infoborder, linewidth=1pt,
+  innerleftmargin=8pt, innerrightmargin=8pt,
+  innertopmargin=6pt, innerbottommargin=6pt,
+  skipabove=6pt, skipbelow=6pt,
+]{infobox}
+
+% ── Headers / footers ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\textit{ObjectIR v2 --- Language Specification}}
+\fancyhead[R]{\small\textit{ObjectIR Project}}
+\fancyfoot[C]{\thepage}
+
+% ── Section formatting ────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{sectionrule}}{}{0em}{}[{\color{sectionrule}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\bfseries}{}{0em}{}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\Huge\bfseries ObjectIR}\\[0.5em]
+  {\large\bfseries Version 2}\\[0.8em]
+  {\Large Language Specification}\\[2.5em]
+  \rule{0.55\linewidth}{0.4pt}\\[1.2em]
+  {\normalsize
+    A stack-based intermediate representation\\[0.3em]
+    and virtual machine definition
+  }\\[2.5em]
+  \begin{tabular}{ll}
+    \textbf{Source format:}   & TextIR (human-readable), JSON, FOB/IR v3 (binary) \\[0.2em]
+    \textbf{Execution model:} & Stack machine, one evaluation stack per call frame \\[0.2em]
+    \textbf{Type model:}      & Untyped stack; lazy coercion at instruction boundaries \\[0.2em]
+    \textbf{Revision:}        & \today \\
+  \end{tabular}
+  \vfill
+  {\small This document is the normative specification of the ObjectIR language:
+  its source format, module structure, type system, and instruction set.
+  Implementation-specific notes are confined to appendices.}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Introduction}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\textbf{ObjectIR} is a typed, object-oriented intermediate representation (IR)
+designed to be simple to parse, simple to execute, and straightforward to
+target from higher-level languages or toolchains.
+
+A program is expressed as one or more \emph{modules}, each containing class
+and interface definitions whose methods are composed of explicit stack-machine
+instructions. The IR sits at the same conceptual level as JVM bytecode or
+CIL, but its primary surface format (\emph{TextIR}) is human-readable and
+hand-writable.
+
+\subsection{Design Goals}
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Human-readable source.} TextIR is the canonical format: a
+    whitespace-significant, keyword-driven text form that lowers to the same
+    module representation as the JSON and binary forms.
+  \item \textbf{Multiple input formats.} A module may be delivered as TextIR
+    source, a JSON object graph, or a compact FOB/IR v3 binary. All three
+    forms are semantically equivalent.
+  \item \textbf{Embeddable.} A conforming runtime must allow host code to
+    load a module, invoke individual methods, and register external (native)
+    type and method bindings without touching a parser.
+  \item \textbf{Lazy coercion.} Values on the evaluation stack carry no
+    static type tag. Numeric widening and other conversions are performed
+    at instruction boundaries according to well-defined rules.
+  \item \textbf{Structured control flow.} Loops, conditionals, and exception
+    handlers are first-class instructions, not jump targets.
+\end{itemize}
+
+\subsection{Document Conventions}
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Normative} text uses \textbf{shall} / \textbf{must}.
+    \textbf{Informative} text uses \textit{should} / \textit{may}.
+  \item Grammar non-terminals are written \nterm{like-this}; terminals are
+    written \term{like-this}.
+  \item Instruction mnemonics are typeset \opcode{like-this}.
+  \item Type names are typeset \typename{like-this}.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module Structure}
+\label{sec:module}
+% ══════════════════════════════════════════════════════════════════════════════
+
+A \emph{module} is the top-level compilation and loading unit of ObjectIR.
+
+\subsection{Module Contents}
+
+A well-formed module contains:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item A \textbf{name}: a non-empty identifier string.
+  \item A \textbf{version}: a three-part numeric tuple
+    (\textit{major}.\textit{minor}.\textit{patch}), where \textit{patch} is
+    optional and defaults to \texttt{0}.
+  \item An ordered list of \textbf{type definitions}: classes, interfaces,
+    structs, and enums.
+  \item A (reserved) \textbf{free-function table}, intended for future
+    module-level functions outside any type. Runtimes must accept and ignore
+    this field if present.
+\end{itemize}
+
+\subsection{Module Identity}
+
+Two modules are considered the \emph{same module} if and only if their names
+are identical. Version numbers are informational; the runtime does not perform
+version enforcement unless the host explicitly requires it.
+
+\subsection{Active Module}
+
+A runtime instance holds \textbf{exactly one} active module at a time.
+Loading a new module replaces the previous one. A \emph{full reset} also
+clears all static field state; a \emph{module-only reload} replaces the type
+table while optionally preserving heap state.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Source Formats}
+\label{sec:formats}
+% ══════════════════════════════════════════════════════════════════════════════
+
+ObjectIR defines three equivalent surface representations of a module. All
+three must express identical semantics; a conforming tool or runtime may
+accept any subset.
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Format} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \textbf{TextIR}    &
+    Human-readable source text (see Section~\ref{sec:textir}).
+    The canonical authoring format. A conforming parser produces a module
+    representation equivalent to the JSON form. \\[0.4em]
+  \textbf{JSON}      &
+    A JSON object whose structure mirrors the module schema
+    (Section~\ref{sec:schema}). Property names are camelCase.
+    This is the recommended interchange format between tools. \\[0.4em]
+  \textbf{FOB/IR v3} &
+    A compact binary encoding of the module schema
+    (Section~\ref{sec:fob}). Intended for distribution and fast loading. \\
+  \bottomrule
+\end{longtable}
+
+\begin{notebox}
+\textbf{Auto-detection hint:} A string whose first non-whitespace character
+is \texttt{\{} or \texttt{[} should be treated as JSON; all other strings
+should be treated as TextIR. Implementations may expose this heuristic as
+an \texttt{Auto} format option.
+\end{notebox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{TextIR Syntax}
+\label{sec:textir}
+% ══════════════════════════════════════════════════════════════════════════════
+
+TextIR is a line-oriented, brace-delimited language. Whitespace (outside
+string literals) is insignificant except as a token separator. Comments
+begin with \term{//} and extend to the end of the line.
+
+\subsection{Module Header}
+
+Every TextIR file must begin with a module header:
+
+\begin{lstlisting}[style=textir]
+module <name> version <major>.<minor>[.<patch>]
+\end{lstlisting}
+
+\subsection{Type Declarations}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Keyword}   & \textbf{Kind}      & \textbf{Notes} \\
+  \midrule
+  \term{class}     & Reference type   & Instances are heap-allocated objects. \\
+  \term{interface} & Contract type    & Declares virtual methods; no fields. \\
+  \term{struct}    & Value type       & Semantics are host-defined. \\
+  \term{enum}      & Enumeration type & Members are named integer constants. \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Any combination of the following \emph{access modifiers} may precede the
+type keyword: \term{public}, \term{private}, \term{protected},
+\term{internal}.
+
+The following \emph{type modifiers} may also precede the keyword:
+\term{abstract}, \term{sealed}.
+
+Inheritance and interface implementation are expressed with \term{:}:
+
+\begin{lstlisting}[style=textir]
+class Animal {
+    field name: string
+    virtual method Speak() -> void { ret }
+}
+
+class Dog : Animal {
+    override method Speak() -> void implements Animal.Speak {
+        ldstr "Woof!"
+        call System.Console.WriteLine(string) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Member Declarations}
+
+\begin{lstlisting}[style=textir]
+// Field
+[static] field <name>: <type>
+
+// Method
+[static] [virtual] [override] [abstract]
+method <name>(<params>) -> <rettype> [implements <Interface>.<MethodName>]
+{
+    [local <name>: <type>]*
+    <instructions>
+}
+
+// Constructor
+constructor(<params>) {
+    [local <name>: <type>]*
+    <instructions>
+}
+\end{lstlisting}
+
+Parameter lists and local variable declarations share the syntax
+\code{name: type}, comma-separated.
+
+\subsection{Grammar Summary}
+
+\begin{lstlisting}[style=pseudo]
+module-decl  ::= "module" name "version" version-num
+version-num  ::= int "." int ["." int]
+
+type-decl    ::= access-mod* type-mod* type-kw name [":" base-name]
+                 "{" member* "}"
+type-kw      ::= "class" | "interface" | "struct" | "enum"
+access-mod   ::= "public" | "private" | "protected" | "internal"
+type-mod     ::= "abstract" | "sealed"
+
+member       ::= field-decl | method-decl | ctor-decl
+field-decl   ::= ["static"] "field" name ":" type-name
+method-decl  ::= method-mod* "method" name "(" params ")" "->" type-name
+                 ["implements" qualified-name] "{" body "}"
+method-mod   ::= "static" | "virtual" | "override" | "abstract"
+ctor-decl    ::= "constructor" "(" params ")" "{" body "}"
+
+params       ::= (name ":" type-name ("," name ":" type-name)*)?
+body         ::= ("local" name ":" type-name)* instruction*
+instruction  ::= opcode [operand]
+\end{lstlisting}
+
+\subsection{Attributes (Annotations)}
+
+Custom attributes may be applied to types, fields, and methods by placing
+\term{@AttributeName} (with an optional positional argument list) immediately
+before the declaration:
+
+\begin{lstlisting}[style=textir]
+@Serializable
+class PlayerData {
+    @NonSerialized
+    field cachedHash: int32
+
+    @Deprecated("Use SaveAsync instead")
+    method Save() -> void { ret }
+}
+\end{lstlisting}
+
+A runtime must attach attribute metadata to the corresponding declaration;
+how it is stored and queried is implementation-defined.
+
+\subsection{String Escape Sequences}
+
+Within string literals the following escape sequences are defined:
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Sequence} & \textbf{Meaning} \\
+  \midrule
+  \texttt{\textbackslash n}              & Line feed (U+000A) \\
+  \texttt{\textbackslash t}              & Horizontal tab (U+0009) \\
+  \texttt{\textbackslash r}              & Carriage return (U+000D) \\
+  \texttt{\textbackslash\textbackslash}  & Backslash (U+005C) \\
+  \texttt{\textbackslash"}              & Double quote (U+0022) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Type System}
+\label{sec:types}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Primitive Types}
+
+ObjectIR defines a fixed set of primitive types. Type names in operands are
+\textbf{case-insensitive}: the runtime normalises them to lower-case before
+lookup, so \texttt{System.String}, \texttt{system.string}, and \texttt{string}
+are all equivalent.
+
+\begin{longtable}{lll}
+  \toprule
+  \textbf{Primary IR name(s)} & \textbf{Alias(es)} & \textbf{Width / Semantics} \\
+  \midrule
+  \endhead
+  \texttt{void}                     & \texttt{system.void}     & No value; return type only. \\
+  \texttt{bool}                     & \texttt{system.boolean}  & Boolean true/false. \\
+  \texttt{int8}                     & \texttt{system.sbyte}    & 8-bit signed integer. \\
+  \texttt{uint8}                    & \texttt{system.byte}     & 8-bit unsigned integer. \\
+  \texttt{int16}                    & \texttt{system.int16}    & 16-bit signed integer. \\
+  \texttt{uint16}                   & \texttt{system.uint16}   & 16-bit unsigned integer. \\
+  \texttt{int32}                    & \texttt{system.int32}    & 32-bit signed integer. \\
+  \texttt{uint32}                   & \texttt{system.uint32}   & 32-bit unsigned integer. \\
+  \texttt{int64}                    & \texttt{system.int64}    & 64-bit signed integer. \\
+  \texttt{uint64}                   & \texttt{system.uint64}   & 64-bit unsigned integer. \\
+  \texttt{float32}, \texttt{single} & \texttt{system.single}   & 32-bit IEEE 754 float. \\
+  \texttt{float64}, \texttt{double} & \texttt{system.double}   & 64-bit IEEE 754 float. \\
+  \texttt{char}                     & \texttt{system.char}     & Unicode scalar (UTF-16 unit). \\
+  \texttt{string}                   & \texttt{system.string}   & Immutable Unicode character sequence. \\
+  \texttt{object}                   & \texttt{system.object}   & Top type; any value. \\
+  \texttt{decimal}                  & \texttt{system.decimal}  & High-precision fixed-point decimal. \\
+  \texttt{datetime}                 & \texttt{system.datetime} & Date and time instant. \\
+  \texttt{timespan}                 & \texttt{system.timespan} & Duration / time interval. \\
+  \texttt{guid}                     & \texttt{system.guid}     & 128-bit globally unique identifier. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{User-Defined Types}
+
+A type defined in the module is either a \textbf{class}, \textbf{interface},
+\textbf{struct}, or \textbf{enum}. At runtime, instances of user-defined
+types are \emph{managed objects}: heap-allocated records that carry:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item A \textbf{type name} identifying the declared type.
+  \item A \textbf{field store}: a mapping from field name to value.
+  \item An optional \textbf{host backing object} supplied by the host runtime
+    (see Section~\ref{sec:hostinterop}).
+  \item Zero or more \textbf{attribute instances} attached at load time.
+\end{itemize}
+
+\subsection{Inheritance}
+
+A class may declare at most one \emph{base class}. A class or struct may
+declare any number of \emph{implemented interfaces}. Runtimes are not
+required to perform inheritance-aware type checks in v2
+(see Section~\ref{sec:limits}).
+
+\subsection{Null}
+
+\texttt{null} is a valid value for any non-primitive type. The
+\opcode{ldnull} instruction places it on the stack.
+
+\subsection{Value Coercion Semantics}
+\label{sec:coerce}
+
+Because the evaluation stack carries untyped values, the runtime applies
+the following coercion rules at instruction boundaries:
+
+\begin{longtable}{lp{9.5cm}}
+  \toprule
+  \textbf{Target type} & \textbf{Rule} \\
+  \midrule
+  \endhead
+  \texttt{bool}      &
+    \texttt{null}, integer \texttt{0}, and empty string \texttt{""} are
+    \texttt{false}; all other values are \texttt{true}. \\
+  integer type       &
+    Floating-point values are truncated toward zero. Strings are parsed
+    as base-10 integers using the invariant locale. Out-of-range results
+    are implementation-defined but must not raise an unhandled exception. \\
+  floating-point     &
+    Integer values are widened exactly. Strings are parsed as decimal
+    floating-point using the invariant locale. \\
+  \texttt{string}    &
+    Any non-null value is converted to its canonical string representation.
+    \texttt{null} converts to \texttt{null}. \\
+  \texttt{object}    &
+    Identity; any value is valid. \\
+  \bottomrule
+\end{longtable}
+
+Arithmetic instructions select \emph{float mode} (operands widened to
+64-bit float) when either operand is a floating-point value or a string;
+otherwise \emph{integer mode} (64-bit signed) is used.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Instruction Set Reference}
+\label{sec:isa}
+% ══════════════════════════════════════════════════════════════════════════════
+
+ObjectIR uses a \textbf{stack machine} execution model. Each method
+invocation creates a new \emph{call frame} that owns:
+
+\begin{itemize}[leftmargin=1.8em, noitemsep]
+  \item An \textbf{evaluation stack} of untyped values.
+  \item A named \textbf{argument table} (index \texttt{0} / name
+    \texttt{this} is the receiver for instance methods).
+  \item A named \textbf{local variable table}.
+  \item A \textbf{pending exception} slot.
+  \item A \textbf{program counter} (index into the instruction list).
+\end{itemize}
+
+Operands are described using the JSON operand format of
+Section~\ref{sec:schema}.
+
+\subsection{Stack Manipulation}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{nop}    & No-operation; advances the program counter only. \\
+  \opcode{dup}    & Duplicate the top value on the evaluation stack. \\
+  \opcode{pop}    & Discard the top value. \\
+  \opcode{ldnull} & Push \texttt{null} onto the stack. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Load Constants}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldc}    &
+    Push a typed constant.
+    Operand: \code{\{value: ..., type: "<typename>"\}}.
+    \texttt{type} defaults to \texttt{int64}. \\
+  \opcode{ldc.i4} & Push a 32-bit integer constant. Operand: bare integer. \\
+  \opcode{ldc.i8} & Push a 64-bit integer constant. Operand: bare integer. \\
+  \opcode{ldc.r4} & Push a 32-bit float constant. Operand: bare number. \\
+  \opcode{ldc.r8} & Push a 64-bit float constant. Operand: bare number. \\
+  \opcode{ldstr}  &
+    Push a string constant.
+    Operand: \code{\{value: "..."\}} or a bare quoted string. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Arguments and Local Variables}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldarg}  &
+    Push a method argument.
+    Operand: parameter name or 0-based index.
+    Index \texttt{0} / name \texttt{this} is the receiver. \\
+  \opcode{starg}  & Pop a value and store it in the named argument slot. \\
+  \opcode{ldloc}  & Push a local variable by name. \\
+  \opcode{stloc}  & Pop a value and store it in the named local variable. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Field Access}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldfld}  &
+    Pop an object (or use the implicit receiver) and push the value of the
+    named instance field. If the object has a host backing, the runtime
+    \textit{should} read the corresponding property on the host object
+    before consulting the field store. \\
+  \opcode{stfld}  &
+    Pop a value, then pop an object; store the value in the named instance
+    field (and on the host backing, if present). \\
+  \opcode{ldsfld} &
+    Push the value of a static field.
+    Operand: \code{\{field: \{declaringType, name\}\}}. \\
+  \opcode{stsfld} & Pop a value and store it in the named static field. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Arithmetic}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{add} &
+    Pop $b$, pop $a$, push $a + b$.
+    In float mode, also performs string concatenation when either operand
+    is a string. \\
+  \opcode{sub} & Pop $b$, pop $a$, push $a - b$. \\
+  \opcode{mul} & Pop $b$, pop $a$, push $a \times b$. \\
+  \opcode{div} & Pop $b$, pop $a$, push $a \div b$. \\
+  \opcode{rem} & Pop $b$, pop $a$, push $a \bmod b$. \\
+  \opcode{neg} & Pop $v$, push $-v$. \\
+  \bottomrule
+\end{longtable}
+
+Mode selection follows Section~\ref{sec:coerce}: if either operand is
+floating-point (or a string for \opcode{add}), both are promoted to 64-bit
+float; otherwise 64-bit signed integer arithmetic is used.
+
+\subsection{Logical}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{not} & Pop $v$, push the boolean negation: \texttt{!ToBool($v$)}. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Comparison}
+
+Each opcode pops $b$ then $a$ and pushes a \texttt{bool}.
+
+\begin{longtable}{ll}
+  \toprule
+  \textbf{Opcode} & \textbf{Condition} \\
+  \midrule
+  \endhead
+  \opcode{ceq} & $a = b$ \\
+  \opcode{cne} & $a \neq b$ \\
+  \opcode{cgt} & $a > b$ \\
+  \opcode{cge} & $a \geq b$ \\
+  \opcode{clt} & $a < b$ \\
+  \opcode{cle} & $a \leq b$ \\
+  \bottomrule
+\end{longtable}
+
+String comparisons use ordinal (byte-by-byte) ordering.
+Boolean values are supported for \opcode{ceq} and \opcode{cne} only.
+All other operand pairs are promoted to 64-bit float before comparison.
+
+\subsection{Type Conversion and Testing}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode}    & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{conv}      &
+    Pop a value and push it converted to the named target type according
+    to the coercion rules in Section~\ref{sec:coerce}. \\
+  \opcode{castclass} &
+    Assert that the top-of-stack managed object has the given type name;
+    raise a cast error if it does not.
+    (Exact type-name match only in v2; see Section~\ref{sec:limits}.) \\
+  \opcode{isinst}    &
+    Pop a value; push \texttt{true} if it is a managed object with the
+    given type name, otherwise \texttt{false}. \\
+  \bottomrule
+\end{longtable}
+
+\begin{warnbox}
+\textbf{v2 limitation:} \opcode{castclass} and \opcode{isinst} perform
+\emph{exact} type-name matching. Walking an inheritance chain is not required
+of conforming implementations in this version.
+\end{warnbox}
+
+\subsection{Object and Array Creation}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode}  & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{newobj}  &
+    Create a new managed object of the named type and push it. If the type
+    is a registered host type, the runtime \textit{should} also construct
+    the corresponding host backing object. \\
+  \opcode{newarr}  &
+    Push a new, empty, dynamically-typed array. \\
+  \opcode{ldelem}  &
+    Pop an index (0-based integer), pop an array;
+    push \texttt{array[index]}. \\
+  \opcode{stelem}  &
+    Pop a value, pop an index, pop an array;
+    set \texttt{array[index] = value}. \\
+  \bottomrule
+\end{longtable}
+
+\begin{notebox}
+Arrays in ObjectIR v2 are untyped and variable-length. Typed array variants
+(e.g.\ \texttt{int[]}) are not defined in this version.
+\end{notebox}
+
+\subsection{Method Calls}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode}   & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{call}     &
+    Pop arguments left-to-right, then pop the receiver (for instance
+    methods); invoke the target method.
+    Operand: \code{\{method: \{declaringType, name, returnType,
+    parameterTypes[]\}\}}. \\
+  \opcode{callvirt} &
+    Same as \opcode{call}, but dispatch is virtual: the actual type of the
+    receiver determines which override is executed. \\
+  \opcode{ret}      &
+    Return from the current frame. If a value is present on the evaluation
+    stack it is transferred to the caller's stack. \\
+  \bottomrule
+\end{longtable}
+
+\subsubsection{Call Resolution Order}
+\label{sec:callres}
+
+A conforming runtime must attempt the following sequence for every
+\opcode{call} and \opcode{callvirt}:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Exact native/host lookup.} Match the full signature string
+    \code{DeclaringType.Name(param0,param1,...)} against the registered
+    host method table.
+  \item \textbf{Simplified native/host lookup.} Retry with parameter type
+    names reduced to their unqualified, lower-case short names
+    (e.g.\ \code{System.String} $\to$ \code{string}).
+  \item \textbf{Host reflection.} If the runtime supports reflective dispatch
+    and it is enabled, invoke the method on the host backing object.
+  \item \textbf{IR method dispatch.} Look up the method in the loaded
+    module's type table.
+\end{enumerate}
+
+If none of the steps resolve the call, a \textbf{missing-method} error is
+raised.
+
+\subsection{Control Flow}
+
+\begin{longtable}{lp{10.5cm}}
+  \toprule
+  \textbf{Opcode}    & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{if}        &
+    Evaluate the condition operand (Section~\ref{sec:conditions}).
+    If truthy, execute \code{thenBlock};
+    otherwise execute the optional \code{elseBlock}. \\
+  \opcode{while}     &
+    Repeatedly evaluate the condition and execute \code{body}.
+    A \opcode{break} inside \code{body} exits the loop;
+    a \opcode{continue} skips to the next condition evaluation. \\
+  \opcode{break}     & Exit the nearest enclosing \opcode{while}. \\
+  \opcode{continue}  & Skip to the next iteration of the nearest \opcode{while}. \\
+  \opcode{try}       &
+    Execute \code{tryBlock}. If an exception is raised, test each
+    \code{catchBlock} in order (Section~\ref{sec:exceptions}).
+    Execute the optional \code{finallyBlock} in all cases. \\
+  \opcode{throw}     &
+    Pop a value and raise it as a pending exception on the current frame. \\
+  \bottomrule
+\end{longtable}
+
+\subsubsection{Condition Kinds}
+\label{sec:conditions}
+
+A condition embedded in an \opcode{if} or \opcode{while} operand has a
+\texttt{kind} field that determines how it is evaluated:
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Kind}       & \textbf{Evaluation} \\
+  \midrule
+  \endhead
+  \code{stack}      &
+    Pop the top-of-stack value and coerce it to \texttt{bool}
+    (Section~\ref{sec:coerce}).
+    An empty stack is treated as \texttt{false}. \\
+  \code{binary}     &
+    Pop $r$, pop $l$; apply the named comparison opcode
+    (\opcode{ceq}, \opcode{cgt}, \ldots) and use the result. \\
+  \code{expression} &
+    Execute a single embedded instruction and pop the result. \\
+  \code{block}      &
+    Execute a sequence of instructions and pop the final result. \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Exception Model}
+\label{sec:exceptions}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Raising Exceptions}
+
+The \opcode{throw} instruction accepts any value: a managed object, a host
+exception type, or a plain string. The value is stored in the
+\emph{pending exception} slot of the current frame and instruction execution
+in that frame halts.
+
+\subsection{Structured Exception Handling}
+
+The \opcode{try} instruction provides first-class structured exception
+handling. Its operand defines up to three regions:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \code{tryBlock} --- the guarded instructions.
+  \item \code{catchBlocks} --- an ordered list of catch clauses, each with
+    an optional \code{type} field and a \code{body}.
+  \item \code{finallyBlock} --- instructions executed unconditionally after
+    the try/catch, regardless of outcome.
+\end{itemize}
+
+Catch clauses are matched in declaration order against the pending exception:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Catch-all} (no \code{type} field) --- matches any value.
+  \item \textbf{Type name match} --- the pending exception is a managed object
+    whose type name equals the catch clause's \code{type}.
+  \item \textbf{Host type match} --- the host runtime may additionally apply
+    assignability checks against registered host types.
+\end{enumerate}
+
+\subsection{Exception Propagation}
+
+If no catch clause in the current frame matches, the pending exception
+propagates to the caller's frame. This continues until either a matching
+clause is found or the call stack is exhausted. An unhandled exception at
+the top of the stack is delivered to the host via the exception hook.
+
+\subsection{Control-Flow Exception Tokens}
+
+The \opcode{break} and \opcode{continue} instructions are implemented as
+\emph{structured control-flow tokens}. They must not be catchable by user
+\opcode{try}/\opcode{catch} blocks and must not propagate outside the
+enclosing \opcode{while} instruction.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module Schema (JSON / In-Memory)}
+\label{sec:schema}
+% ══════════════════════════════════════════════════════════════════════════════
+
+This section defines the canonical JSON structure of a module. The same
+structure is used as the in-memory representation produced by a TextIR
+parser and consumed by a runtime. All property names are camelCase.
+
+\subsection{Top-Level Object}
+
+\begin{lstlisting}[style=json]
+{
+  "name":      "<module-name>",
+  "version":   "<major>.<minor>.<patch>",
+  "types":     [ <TypeObject>, ... ],
+  "functions": null   // reserved; must be accepted and ignored
+}
+\end{lstlisting}
+
+\subsection{Type Object}
+
+\begin{lstlisting}[style=json]
+{
+  "kind":           "class" | "interface" | "struct" | "enum",
+  "name":           "<SimpleName>",
+  "_namespace":     "<Namespace>" | null,
+  "baseType":       "<QualifiedName>" | null,
+  "baseInterfaces": [ "<QualifiedName>", ... ],
+  "fields":         [ <FieldObject>, ... ],
+  "methods":        [ <MethodObject>, ... ]
+}
+\end{lstlisting}
+
+\subsection{Field Object}
+
+\begin{lstlisting}[style=json]
+{
+  "name":       "<name>",
+  "type":       "<typename>",
+  "isStatic":   true | false,
+  "attributes": [ <AttributeObject>, ... ]
+}
+\end{lstlisting}
+
+\subsection{Method Object}
+
+\begin{lstlisting}[style=json]
+{
+  "name":         "<name>",
+  "returnType":   "<typename>",
+  "isStatic":     true | false,
+  "isVirtual":    true | false,
+  "isOverride":   true | false,
+  "isAbstract":   true | false,
+  "parameters":   [ { "name": "...", "type": "..." }, ... ],
+  "locals":       [ { "name": "...", "type": "..." }, ... ],
+  "instructions": [ <InstructionObject>, ... ],
+  "attributes":   [ <AttributeObject>, ... ]
+}
+\end{lstlisting}
+
+\subsection{Instruction Object}
+
+\begin{lstlisting}[style=json]
+{
+  "opCode":  "<mnemonic>",
+  "operand": <any JSON value>
+}
+\end{lstlisting}
+
+The \texttt{operand} is opcode-specific. Common patterns:
+
+\begin{longtable}{lp{8cm}}
+  \toprule
+  \textbf{Opcode(s)} & \textbf{Operand form} \\
+  \midrule
+  \endhead
+  \opcode{ldstr}                          & Bare string or \code{\{"value":"..."\}} \\
+  \opcode{ldc}, \opcode{ldc.*}            & \code{\{"value": ..., "type": "<typename>"\}} or bare number \\
+  \opcode{ldarg}, \opcode{starg},
+  \opcode{ldloc}, \opcode{stloc}          & Parameter/local name (string) or 0-based index (integer) \\
+  \opcode{ldfld}, \opcode{stfld}          & Field name string \\
+  \opcode{ldsfld}, \opcode{stsfld}        & \code{\{"field":\{"declaringType":"...","name":"..."\}\}} \\
+  \opcode{call}, \opcode{callvirt}        &
+    \code{\{"method":\{"declaringType":"...","name":"...",}
+    \code{"returnType":"...","parameterTypes":["..."]\}\}} \\
+  \opcode{newobj}, \opcode{conv},
+  \opcode{castclass}, \opcode{isinst}     & Type name string \\
+  \opcode{if}                             &
+    \code{\{"condition":<CondObj>,"thenBlock":[...],}
+    \code{"elseBlock":[...]\}} \\
+  \opcode{while}                          & \code{\{"condition":<CondObj>,"body":[...]\}} \\
+  \opcode{try}                            &
+    \code{\{"tryBlock":[...],"catchBlocks":[...],}
+    \code{"finallyBlock":[...]\}} \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Condition Object}
+
+\begin{lstlisting}[style=json]
+{
+  "kind":      "stack" | "binary" | "expression" | "block",
+  "operation": "<opcode>",              // for "binary"
+  "body":      [ <InstructionObject>, ... ]  // for "expression" / "block"
+}
+\end{lstlisting}
+
+\subsection{Attribute Object}
+
+\begin{lstlisting}[style=json]
+{
+  "name": "<AttributeTypeName>",
+  "args": [ <value>, ... ]
+}
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{FOB/IR v3 Binary Format}
+\label{sec:fob}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The FOB/IR v3 format is a compact binary encoding of the module schema
+defined in Section~\ref{sec:schema}. It is intended for distribution and
+fast loading; the semantics are identical to the JSON and TextIR forms.
+
+\subsection{File Layout}
+
+\begin{longtable}{lp{9cm}}
+  \toprule
+  \textbf{Section} & \textbf{Contents} \\
+  \midrule
+  \endhead
+  \textbf{Header}        &
+    4-byte magic \texttt{0x464F4249} (\texttt{FOBI}), 1-byte format
+    version (\texttt{0x03}), module name (length-prefixed UTF-8), version
+    triple (three \texttt{uint16}). \\
+  \textbf{String pool}   &
+    A length-prefixed table of interned UTF-8 strings referenced by index
+    throughout the rest of the file. \\
+  \textbf{Type table}    &
+    Sequential type records: kind byte, name index, namespace index,
+    base type index, interface index list, field count + field records,
+    method count + method records. \\
+  \textbf{Method bodies} &
+    Per-method: parameter count + parameter records, local count + local
+    records, instruction count + instruction records. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Binary Opcode Map}
+
+Each instruction is stored as a 1-byte opcode followed by a variable-length
+operand.
+
+\begin{longtable}{llll}
+  \toprule
+  \textbf{Byte} & \textbf{Mnemonic} & \textbf{Byte} & \textbf{Mnemonic} \\
+  \midrule
+  \endhead
+  \texttt{0x00} & \texttt{nop}       & \texttt{0x10} & \texttt{ldsfld}   \\
+  \texttt{0x01} & \texttt{ldc}       & \texttt{0x11} & \texttt{stsfld}   \\
+  \texttt{0x02} & \texttt{ldstr}     & \texttt{0x12} & \texttt{newobj}   \\
+  \texttt{0x03} & \texttt{ldarg}     & \texttt{0x13} & \texttt{newarr}   \\
+  \texttt{0x04} & \texttt{starg}     & \texttt{0x14} & \texttt{ldelem}   \\
+  \texttt{0x05} & \texttt{ldloc}     & \texttt{0x15} & \texttt{stelem}   \\
+  \texttt{0x06} & \texttt{stloc}     & \texttt{0x16} & \texttt{call}     \\
+  \texttt{0x07} & \texttt{add}       & \texttt{0x17} & \texttt{callvirt} \\
+  \texttt{0x08} & \texttt{sub}       & \texttt{0x18} & \texttt{ret}      \\
+  \texttt{0x09} & \texttt{mul}       & \texttt{0x19} & \texttt{if}       \\
+  \texttt{0x0A} & \texttt{div}       & \texttt{0x1A} & \texttt{while}    \\
+  \texttt{0x0B} & \texttt{rem}       & \texttt{0x1B} & \texttt{break}    \\
+  \texttt{0x0C} & \texttt{neg}       & \texttt{0x1C} & \texttt{continue} \\
+  \texttt{0x0D} & \texttt{ceq}       & \texttt{0x1D} & \texttt{try}      \\
+  \texttt{0x0E} & \texttt{cne}       & \texttt{0x1E} & \texttt{throw}    \\
+  \texttt{0x0F} & \texttt{ldfld}     & \texttt{0x1F} & \texttt{conv}     \\
+  \texttt{0x20} & \texttt{castclass} & \texttt{0x21} & \texttt{isinst}   \\
+  \texttt{0x22} & \texttt{dup}       & \texttt{0x23} & \texttt{pop}      \\
+  \texttt{0x24} & \texttt{ldnull}    & \texttt{0x25} & \texttt{not}      \\
+  \texttt{0x26} & \texttt{cgt}       & \texttt{0x27} & \texttt{cge}      \\
+  \texttt{0x28} & \texttt{clt}       & \texttt{0x29} & \texttt{cle}      \\
+  \texttt{0x2A} & \texttt{stfld}     & \texttt{0x2B} & \texttt{ldc.i4}   \\
+  \texttt{0x2C} & \texttt{ldc.i8}    & \texttt{0x2D} & \texttt{ldc.r4}   \\
+  \texttt{0x2E} & \texttt{ldc.r8}    &               &                   \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Host Interoperability}
+\label{sec:hostinterop}
+% ══════════════════════════════════════════════════════════════════════════════
+
+This section defines requirements for runtimes that allow host code to
+expose native types and methods to IR programs. All features in this section
+are \textbf{optional}; a minimal runtime that only executes pure IR code
+need not implement them.
+
+\subsection{Host Type Registration}
+
+A runtime \textit{may} allow the host to register \emph{external types}
+under IR type names. Once registered:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \opcode{newobj} for that type name constructs a host instance and
+    attaches it as the backing of the managed object wrapper.
+  \item \opcode{ldfld} / \opcode{stfld} consult the host object's property
+    store before the managed object's field dictionary.
+  \item \opcode{ldsfld} / \opcode{stsfld} may access static members on the
+    host type.
+\end{itemize}
+
+\subsection{Native Method Bindings}
+
+A runtime \textit{may} allow the host to register \emph{native method
+bindings}: callbacks keyed by a call signature string of the form:
+
+\[
+\texttt{DeclaringType.MethodName(param0Type,param1Type,...)}
+\]
+
+When the runtime resolves a \opcode{call} or \opcode{callvirt}, it checks
+the native binding table before performing IR method lookup (steps 1--3 of
+Section~\ref{sec:callres}).
+
+A native binding callback receives:
+\begin{itemize}[leftmargin=1.8em, noitemsep]
+  \item The receiver object (or a null equivalent for static calls).
+  \item A positional list of argument values in declaration order.
+\end{itemize}
+
+It returns a single result value (or a null equivalent for void methods).
+
+\subsection{Observability Hooks}
+
+A runtime \textit{should} provide the following hooks for diagnostics and
+tooling:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Step hook} --- invoked before each instruction with the
+    current frame and instruction as arguments. Useful for debuggers,
+    profilers, and instruction-level traces.
+  \item \textbf{Exception hook} --- invoked when an exception escapes the
+    top of the call stack.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Runtime Conformance Requirements}
+\label{sec:conformance}
+% ══════════════════════════════════════════════════════════════════════════════
+
+A conforming ObjectIR v2 runtime \textbf{must}:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Accept at least one of the three module formats
+    (TextIR, JSON, FOB/IR v3) as input.
+  \item Maintain a call stack of frames with independent evaluation stacks.
+  \item Implement all opcodes defined in Section~\ref{sec:isa}.
+  \item Apply the coercion rules of Section~\ref{sec:coerce} at instruction
+    boundaries.
+  \item Implement the call resolution order of Section~\ref{sec:callres}.
+  \item Implement structured exception handling as defined in
+    Section~\ref{sec:exceptions}, including the requirement that
+    \opcode{break}/\opcode{continue} tokens are not user-catchable.
+  \item Expose an entry-point invocation mechanism (canonically targeting a
+    static \texttt{Program.Main} with no parameters).
+  \item Expose a named method invocation mechanism allowing the host to call
+    any method by qualified name with arbitrary arguments.
+  \item Expose a named method existence check that inspects module metadata
+    without executing code.
+\end{enumerate}
+
+A conforming runtime \textit{should} additionally:
+
+\begin{enumerate}[leftmargin=2em, resume]
+  \item Implement host type registration (Section~\ref{sec:hostinterop}).
+  \item Implement native method binding (Section~\ref{sec:hostinterop}).
+  \item Implement step and exception observability hooks.
+  \item Pre-register the built-in \texttt{System.Console} and
+    \texttt{System.String} native bindings listed in
+    Appendix~\ref{app:builtins}.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Worked Examples}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Hello World}
+
+\begin{lstlisting}[style=textir, caption={Hello World in TextIR}]
+module HelloWorld version 1.0.0
+
+class Program {
+    static method Main() -> void {
+        ldstr "Hello, ObjectIR!"
+        call System.Console.WriteLine(string) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Fibonacci (Recursive)}
+
+\begin{lstlisting}[style=textir, caption={Recursive Fibonacci}]
+module Fibonacci version 1.0.0
+
+class Program {
+    static method Fib(n: int32) -> int32 {
+        ldarg n
+        ldc.i4 2
+        clt
+        if { "kind": "stack",
+             "thenBlock": [
+               { "opCode": "ldarg", "operand": "n" },
+               { "opCode": "ret" }
+             ] }
+
+        ldarg n
+        ldc.i4 1
+        sub
+        call Program.Fib(int32) -> int32
+
+        ldarg n
+        ldc.i4 2
+        sub
+        call Program.Fib(int32) -> int32
+
+        add
+        ret
+    }
+
+    static method Main() -> void {
+        ldc.i4 10
+        call Program.Fib(int32) -> int32
+        call System.Console.WriteLine(int32) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Instance Classes and Fields}
+
+\begin{lstlisting}[style=textir, caption={Instance class with constructor}]
+module ClassDemo version 1.0.0
+
+class Vector2D {
+    field x: float32
+    field y: float32
+
+    constructor(x: float32, y: float32) {
+        ldarg this
+        ldarg x
+        stfld x
+        ldarg this
+        ldarg y
+        stfld y
+        ret
+    }
+
+    // returns sqrt(x*x + y*y)
+    method Length() -> float32 {
+        ldarg this
+        ldfld x
+        ldarg this
+        ldfld x
+        mul
+        ldarg this
+        ldfld y
+        ldarg this
+        ldfld y
+        mul
+        add
+        call System.Math.Sqrt(float64) -> float64
+        conv float32
+        ret
+    }
+}
+
+class Program {
+    static method Main() -> void {
+        ldc.r4 3.0
+        ldc.r4 4.0
+        newobj Vector2D
+        callvirt Vector2D.Length() -> float32
+        call System.Console.WriteLine(object) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Exception Handling}
+
+\begin{lstlisting}[style=textir, caption={try / catch / finally}]
+module ExceptionDemo version 1.0.0
+
+class MyError {
+    field message: string
+    constructor(message: string) {
+        ldarg this
+        ldarg message
+        stfld message
+        ret
+    }
+}
+
+class Program {
+    static method Main() -> void {
+        try {
+            "tryBlock": [
+                { "opCode": "newobj",  "operand": "MyError" },
+                { "opCode": "throw" }
+            ],
+            "catchBlocks": [ {
+                "type": "MyError",
+                "variable": "err",
+                "body": [
+                    { "opCode": "ldstr", "operand": "caught!" },
+                    { "opCode": "call",
+                      "operand": { "method": {
+                        "declaringType": "System.Console",
+                        "name": "WriteLine",
+                        "returnType": "void",
+                        "parameterTypes": ["string"] } } }
+                ]
+            } ],
+            "finallyBlock": [
+                { "opCode": "ldstr", "operand": "always runs" },
+                { "opCode": "call",
+                  "operand": { "method": {
+                    "declaringType": "System.Console",
+                    "name": "WriteLine",
+                    "returnType": "void",
+                    "parameterTypes": ["string"] } } }
+            ]
+        }
+        ret
+    }
+}
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Known Limitations (v2)}
+\label{sec:limits}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The following features are explicitly \textbf{out of scope} for ObjectIR v2
+and are reserved for future versions:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Generics.} Generic type parameters and instantiation are not
+    defined. Generic host APIs must be exposed through native method bindings.
+  \item \textbf{Typed arrays.} All arrays are untyped. Distinct
+    \texttt{int[]}, \texttt{float[]}, etc.\ are not distinguished.
+  \item \textbf{Inheritance-aware type tests.} \opcode{castclass} and
+    \opcode{isinst} match by exact type name only.
+  \item \textbf{Method overloading on IR-defined types.} Only one method
+    with a given name is permitted per IR type in v2; overloading resolution
+    applies only to host native bindings.
+  \item \textbf{Module-level free functions.} The \texttt{functions} field is
+    reserved; runtimes must accept it but need not execute it.
+  \item \textbf{Concurrent execution.} The specification does not define
+    thread-safety semantics for concurrent use of a single runtime instance.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\appendix
+% ══════════════════════════════════════════════════════════════════════════════
+
+\section{Recommended Built-in Native Method Bindings}
+\label{app:builtins}
+
+A conforming runtime \textit{should} pre-register the following native
+bindings. The table describes the expected observable behaviour; the
+implementation mechanism is host-defined.
+
+\begin{longtable}{lp{7.5cm}}
+  \toprule
+  \textbf{Signature} & \textbf{Expected behaviour} \\
+  \midrule
+  \endhead
+  \texttt{System.Console.WriteLine(string)}
+    & Write the argument followed by a newline to standard output. \\
+  \texttt{System.Console.WriteLine(int32)}
+    & Same, with an integer argument. \\
+  \texttt{System.Console.WriteLine(object)}
+    & Same, converting the argument to string first. \\
+  \texttt{System.Console.WriteLine(string,string)}
+    & Concatenate the two arguments and write a line. \\
+  \texttt{System.Console.WriteLine(string,object)}
+    & Format the first argument as a template with the second; write a line. \\
+  \texttt{System.Console.Write(string)}
+    & Write the argument to standard output without a newline. \\
+  \texttt{System.Console.Write(string,string)}
+    & Concatenate the two arguments and write without a newline. \\
+  \texttt{System.Console.ReadLine()}
+    & Read one line from standard input and return it as a string. \\
+  \texttt{System.Console.Clear()}
+    & Clear the standard output terminal if supported; otherwise no-op. \\
+  \texttt{System.String.Concat(string,string)}
+    & Return the concatenation of the two string arguments. \\
+  \texttt{System.String.Format(string,object)}
+    & Return the first argument as a format template applied to the second. \\
+  \texttt{System.String.Format(string,object,object)}
+    & Same with two substitution arguments. \\
+  \texttt{System.String.IsNullOrEmpty(string)}
+    & Return \texttt{true} if the argument is \texttt{null} or \texttt{""}. \\
+  \texttt{System.Object.ToString()}
+    & Return the string representation of the receiver. \\
+  \texttt{System.Object.GetType()}
+    & Return a description of the receiver's runtime type. \\
+  \bottomrule
+\end{longtable}
+
+\section{Opcode Quick Reference}
+\label{app:opcodes}
+
+\begin{longtable}{lll}
+  \toprule
+  \textbf{Mnemonic} & \textbf{Category} & \textbf{Stack effect} \\
+  \midrule
+  \endhead
+  \opcode{nop}       & Stack      & --- \\
+  \opcode{dup}       & Stack      & $v \to v,\, v$ \\
+  \opcode{pop}       & Stack      & $v \to$ \\
+  \opcode{ldnull}    & Stack      & $\to \texttt{null}$ \\
+  \opcode{ldc}       & Constants  & $\to c$ \\
+  \opcode{ldc.i4}    & Constants  & $\to c_{\text{i32}}$ \\
+  \opcode{ldc.i8}    & Constants  & $\to c_{\text{i64}}$ \\
+  \opcode{ldc.r4}    & Constants  & $\to c_{\text{f32}}$ \\
+  \opcode{ldc.r8}    & Constants  & $\to c_{\text{f64}}$ \\
+  \opcode{ldstr}     & Constants  & $\to s$ \\
+  \opcode{ldarg}     & Variables  & $\to a$ \\
+  \opcode{starg}     & Variables  & $v \to$ \\
+  \opcode{ldloc}     & Variables  & $\to l$ \\
+  \opcode{stloc}     & Variables  & $v \to$ \\
+  \opcode{ldfld}     & Fields     & $\mathit{obj} \to v$ \\
+  \opcode{stfld}     & Fields     & $\mathit{obj}, v \to$ \\
+  \opcode{ldsfld}    & Fields     & $\to v$ \\
+  \opcode{stsfld}    & Fields     & $v \to$ \\
+  \opcode{add}       & Arithmetic & $a, b \to a{+}b$ \\
+  \opcode{sub}       & Arithmetic & $a, b \to a{-}b$ \\
+  \opcode{mul}       & Arithmetic & $a, b \to a{\times}b$ \\
+  \opcode{div}       & Arithmetic & $a, b \to a{\div}b$ \\
+  \opcode{rem}       & Arithmetic & $a, b \to a \bmod b$ \\
+  \opcode{neg}       & Arithmetic & $v \to {-}v$ \\
+  \opcode{not}       & Logical    & $v \to \neg v$ \\
+  \opcode{ceq}       & Comparison & $a, b \to a{=}b$ \\
+  \opcode{cne}       & Comparison & $a, b \to a{\neq}b$ \\
+  \opcode{cgt}       & Comparison & $a, b \to a{>}b$ \\
+  \opcode{cge}       & Comparison & $a, b \to a{\geq}b$ \\
+  \opcode{clt}       & Comparison & $a, b \to a{<}b$ \\
+  \opcode{cle}       & Comparison & $a, b \to a{\leq}b$ \\
+  \opcode{conv}      & Type       & $v \to v'$ \\
+  \opcode{castclass} & Type       & $v \to v$ (or error) \\
+  \opcode{isinst}    & Type       & $v \to \texttt{bool}$ \\
+  \opcode{newobj}    & Objects    & $\to \mathit{obj}$ \\
+  \opcode{newarr}    & Objects    & $\to \mathit{arr}$ \\
+  \opcode{ldelem}    & Objects    & $\mathit{arr}, i \to v$ \\
+  \opcode{stelem}    & Objects    & $\mathit{arr}, i, v \to$ \\
+  \opcode{call}      & Calls      & $\mathit{args}\ldots \to [r]$ \\
+  \opcode{callvirt}  & Calls      & $\mathit{args}\ldots, \mathit{obj} \to [r]$ \\
+  \opcode{ret}       & Calls      & $[v] \to$ (returns to caller) \\
+  \opcode{if}        & Control    & (condition-dependent) \\
+  \opcode{while}     & Control    & (condition-dependent) \\
+  \opcode{break}     & Control    & --- \\
+  \opcode{continue}  & Control    & --- \\
+  \opcode{try}       & Control    & --- \\
+  \opcode{throw}     & Control    & $v \to$ (raises exception) \\
+  \bottomrule
+\end{longtable}
+
+\end{document}
+

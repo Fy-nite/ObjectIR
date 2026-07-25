@@ -1,0 +1,1467 @@
+% ══════════════════════════════════════════════════════════════════════════════
+%  ObjectIR v2 — Language & Runtime Specification
+% ══════════════════════════════════════════════════════════════════════════════
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage{mdframed}
+\usepackage{amsmath}
+
+\geometry{margin=2.4cm}
+
+% ── Colors ────────────────────────────────────────────────────────────────────
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codeborder}{HTML}{CCCCCC}
+\definecolor{kw}{HTML}{0000CC}
+\definecolor{str}{HTML}{008800}
+\definecolor{comment}{HTML}{888888}
+\definecolor{typecolor}{HTML}{7B0000}
+\definecolor{linkcolor}{HTML}{0066CC}
+\definecolor{tableheadbg}{HTML}{E8EEF4}
+\definecolor{sectionrule}{HTML}{3A6EA5}
+\definecolor{notebg}{HTML}{FFF8DC}
+\definecolor{noteborder}{HTML}{DAA520}
+\definecolor{warnbg}{HTML}{FFF0F0}
+\definecolor{warnborder}{HTML}{CC4444}
+
+% ── Hyperref ──────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkcolor,
+  urlcolor=linkcolor,
+  citecolor=linkcolor,
+  pdftitle={ObjectIR v2 — Language \& Runtime Specification},
+  pdfauthor={ObjectIR Project},
+}
+
+% ── Code listing styles ───────────────────────────────────────────────────────
+\lstdefinelanguage{TextIR}{
+  morekeywords={module,version,class,interface,struct,enum,field,method,
+                constructor,local,public,private,protected,internal,static,
+                virtual,override,abstract,sealed,implements,else,catch,finally,
+                true,false,null},
+  morestring=[b]",
+  morecomment=[l]{//},
+  sensitive=true
+}
+
+\lstdefinestyle{textir}{
+  language=TextIR,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{kw},
+  stringstyle=\color{str},
+  commentstyle=\itshape\color{comment},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  numbers=left,
+  numberstyle=\tiny\color{comment},
+  numbersep=6pt,
+  xleftmargin=1.8em,
+}
+
+\lstdefinestyle{cs}{
+  language=[Sharp]C,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{kw},
+  stringstyle=\color{str},
+  commentstyle=\itshape\color{comment},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  numbers=none,
+}
+
+\lstdefinestyle{json}{
+  language=Java,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeborder},
+  basicstyle=\ttfamily\small,
+  stringstyle=\color{str},
+  commentstyle=\itshape\color{comment},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  numbers=none,
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\typename}[1]{\textcolor{typecolor}{\texttt{\small #1}}}
+\newcommand{\kword}[1]{\textbf{\texttt{\small #1}}}
+\newcommand{\opcode}[1]{\textbf{\texttt{#1}}}
+
+% ── Note / Warning boxes ──────────────────────────────────────────────────────
+\newmdenv[
+  backgroundcolor=notebg,
+  linecolor=noteborder,
+  linewidth=1pt,
+  innerleftmargin=8pt,
+  innerrightmargin=8pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt,
+  skipabove=6pt,
+  skipbelow=6pt,
+]{notebox}
+
+\newmdenv[
+  backgroundcolor=warnbg,
+  linecolor=warnborder,
+  linewidth=1pt,
+  innerleftmargin=8pt,
+  innerrightmargin=8pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt,
+  skipabove=6pt,
+  skipbelow=6pt,
+]{warnbox}
+
+% ── Headers / footers ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\textit{ObjectIR v2 — Language \& Runtime Specification}}
+\fancyhead[R]{\small\textit{ObjectIR Project}}
+\fancyfoot[C]{\thepage}
+
+% ── Section formatting ────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{sectionrule}}{}{0em}{}[{\color{sectionrule}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\bfseries}{}{0em}{}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\Huge\bfseries ObjectIR}\\[0.5em]
+  {\large\bfseries Version 2}\\[0.8em]
+  {\Large Language \& Runtime Specification}\\[2.5em]
+  \rule{0.55\linewidth}{0.4pt}\\[1.2em]
+  {\normalsize
+    A stack-based intermediate representation and virtual machine\\[0.3em]
+    for the .NET / Unity ecosystem
+  }\\[2.5em]
+  \begin{tabular}{ll}
+    \textbf{Namespace:}  & \texttt{ObjectIR.Core} \\[0.2em]
+    \textbf{IR format:}  & TextIR, JSON (\texttt{ModuleDto}), FOB/IR v3 binary \\[0.2em]
+    \textbf{Target:}     & .NET 10 / Unity 2022+ \\[0.2em]
+    \textbf{Revision:}   & \today \\
+  \end{tabular}
+  \vfill
+  {\small This document describes the ObjectIR instruction set, TextIR source
+  format, module representation, runtime API, and CLR interoperability layer.}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Overview}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\textbf{ObjectIR} is a stack-based intermediate representation (IR) and
+accompanying virtual machine written in C\# (.NET 10). A program is described
+as a collection of typed modules, each containing class and interface
+definitions with methods composed of explicit stack-machine instructions.
+
+The runtime loads a module, resolves types and methods, and executes
+instructions against a per-call-frame evaluation stack. Every value on the
+stack is an untyped \code{object?}; conversions are performed lazily by the
+\typename{ValueHelpers} layer.
+
+\subsection{Design Goals}
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Human-readable source.} The canonical representation is
+    \emph{TextIR}: a whitespace-significant, keyword-driven text format that
+    compiles to the same in-memory \typename{ModuleDto} as the JSON and binary
+    forms.
+  \item \textbf{Multiple input formats.} A module may be loaded from TextIR
+    source, a serialised JSON \typename{ModuleDto}, a pre-parsed
+    \typename{ModuleNode} AST, or a compiled FOB/IR v3 binary.
+  \item \textbf{Embeddable.} Host applications load a module, call IR methods,
+    and register CLR types or native callbacks without touching a parser.
+  \item \textbf{Reflection fallback.} Any CLR type that does not have a
+    hand-written binding is handled automatically through reflection, so even
+    obscure APIs work without extra glue code.
+  \item \textbf{Struct boxing.} Value types such as \typename{Vector3} and
+    \typename{Quaternion} are transparently wrapped in \typename{ManagedObject}
+    instances so the IR heap can hold them without loss of precision.
+\end{itemize}
+
+\subsection{Quick-start}
+
+\begin{lstlisting}[style=cs, caption={Minimal embedding example}]
+// Construct a runtime (Lattice standalone or Unity variant).
+var rt = new IRRuntime();
+
+// Load a module in any supported format.
+rt.LoadModule(textIrSource);         // auto-detects TextIR / JSON
+rt.LoadModule(fobBytes);             // raw FOB/IR v3 binary
+rt.LoadFobFile("assets/game.fob");   // from disk
+
+// Run the canonical entry point: static Program.Main()
+rt.Run();
+
+// Invoke individual methods by qualified name.
+rt.CallMethod("Player.OnUpdate", deltaTime);
+float hp = rt.CallMethod<float>("Player.GetHealth");
+
+// Inspect module metadata without executing code.
+if (rt.HasMethod("Program.OnFixedUpdate"))
+    rt.CallMethod("Program.OnFixedUpdate");
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module Structure}
+% ══════════════════════════════════════════════════════════════════════════════
+
+An ObjectIR \emph{module} is the top-level compilation unit. It contains:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item A \textbf{name} and a three-part \textbf{version} number
+    (\texttt{major.minor.patch}).
+  \item An ordered list of \textbf{type definitions}
+    (\typename{TypeDto}): classes, interfaces, structs, and enums.
+  \item A (currently reserved) \textbf{functions} table for future
+    module-level free functions.
+\end{itemize}
+
+Modules are represented in memory as a \typename{ModuleDto} (see
+Section~\ref{sec:dto}). The runtime holds exactly one active module at a
+time; loading a new module replaces the previous one.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Input Formats}
+\label{sec:formats}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The runtime accepts four equivalent input representations selected via the
+\typename{InputFormat} enum or auto-detected.
+
+\begin{longtable}{llp{8.5cm}}
+  \toprule
+  \textbf{Format} & \textbf{Enum member} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \code{Auto}   & \code{InputFormat.Auto}   &
+    Inspects the first character of the input string. \texttt{\{} or
+    \texttt{[} triggers JSON parsing; everything else is treated as TextIR
+    source. \\[0.3em]
+  \code{TextIr} & \code{InputFormat.TextIr} &
+    Human-readable TextIR source (see Section~\ref{sec:textir}). Parsed by
+    \typename{TextIrParser} then lowered to \typename{ModuleDto} by
+    \typename{IrAstLowering}. \\[0.3em]
+  \code{Json}   & \code{InputFormat.Json}   &
+    A serialised \typename{ModuleDto} JSON object decoded with
+    \code{System.Text.Json.JsonSerializer} (camelCase property names). \\[0.3em]
+  \code{Ast}    & \code{InputFormat.Ast}    &
+    Alias for \code{TextIr}; the string is processed through the same
+    parser / lowering pipeline. \\[0.3em]
+  \code{FobIr}  & \code{InputFormat.FobIr}  &
+    The string argument is treated as a \emph{file path} to a FOB/IR v3
+    binary. The file is read with \code{File.ReadAllBytes} and decoded by
+    \typename{FobIrReader} + \typename{IrModuleBinaryReader}
+    (see Section~\ref{sec:fob}). \\
+  \bottomrule
+\end{longtable}
+
+\begin{notebox}
+\textbf{Note:} \code{LoadModule(byte[])} and \code{LoadFobFile(string)} always
+decode the input as FOB/IR v3 binary, bypassing the \typename{InputFormat}
+enum entirely.
+\end{notebox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{TextIR Syntax}
+\label{sec:textir}
+% ══════════════════════════════════════════════════════════════════════════════
+
+TextIR is the canonical human-readable source format for ObjectIR modules. A
+TextIR file begins with a module header followed by one or more type
+definitions.
+
+\begin{lstlisting}[style=textir, caption={Minimal TextIR module}]
+module MyApp version 1.0.0
+
+class Program {
+    static method Main() -> void {
+        ldstr "Hello, ObjectIR!"
+        call System.Console.WriteLine(string) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Module Header}
+
+\begin{lstlisting}[style=textir]
+module <name> version <major>.<minor>[.<patch>]
+\end{lstlisting}
+
+\subsection{Type Declarations}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Keyword} & \textbf{Meaning} \\
+  \midrule
+  \texttt{class}     & Reference type (heap-allocated \typename{ManagedObject}) \\
+  \texttt{interface} & Interface (pure virtual contract) \\
+  \texttt{struct}    & Value type \\
+  \texttt{enum}      & Enumeration type \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Access modifiers (\texttt{public}, \texttt{private}, \texttt{protected},
+\texttt{internal}) and type modifiers (\texttt{abstract}, \texttt{sealed})
+may precede the keyword. Inheritance and interface implementation use
+\texttt{:}:
+
+\begin{lstlisting}[style=textir]
+class Animal {
+    field name: string
+    virtual method Speak() -> void { ret }
+}
+
+class Dog : Animal {
+    override method Speak() -> void implements Animal.Speak {
+        ldstr "Woof!"
+        call System.Console.WriteLine(string) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Member Declarations}
+
+\begin{lstlisting}[style=textir]
+// Field declaration
+[static] field <name>: <type>
+
+// Method declaration
+[static] [virtual] [override] [abstract] method <name>(<params>) -> <rettype>
+    [implements <Interface>.<MethodName>]
+{
+    [local <name>: <type>]*
+    <instructions>
+}
+
+// Constructor
+constructor(<params>) {
+    [local <name>: <type>]*
+    <instructions>
+}
+\end{lstlisting}
+
+Parameter and local variable lists share the same syntax:
+\code{name: type[, name: type, ...]}
+
+\subsection{Annotations / Attributes}
+
+Custom attributes may be applied to types, fields, and methods using the
+\code{@} prefix immediately before the declaration:
+
+\begin{lstlisting}[style=textir]
+@Serializable
+class PlayerData {
+    @NonSerialized
+    field cachedHash: int32
+
+    @Deprecated("Use SaveAsync instead")
+    method Save() -> void { ret }
+}
+\end{lstlisting}
+
+At runtime the attribute is instantiated as a \typename{ManagedObject} and
+attached to the corresponding IR object.
+
+\subsection{Inline String Formatting}
+
+Within \texttt{ldstr} operands, the following C-style escape sequences are
+recognised: \texttt{$\backslash$n}, \texttt{$\backslash$t},
+\texttt{$\backslash$r}, \texttt{$\backslash$$\backslash$},
+\texttt{$\backslash$"}.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Type System}
+\label{sec:types}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Primitive Types}
+
+Type names in IR operands are \textbf{case-insensitive}. The runtime
+normalises them to lower-case before lookup, so \texttt{System.String},
+\texttt{system.string}, and \texttt{string} are all equivalent.
+
+\begin{longtable}{lll}
+  \toprule
+  \textbf{IR name(s)} & \textbf{Alias(es)} & \textbf{CLR type} \\
+  \midrule
+  \endhead
+  \texttt{void}                       & \texttt{system.void}     & \texttt{void}     \\
+  \texttt{bool}                       & \texttt{system.boolean}  & \texttt{bool}     \\
+  \texttt{int8}                       & \texttt{system.sbyte}    & \texttt{sbyte}    \\
+  \texttt{uint8}                      & \texttt{system.byte}     & \texttt{byte}     \\
+  \texttt{int16}                      & \texttt{system.int16}    & \texttt{short}    \\
+  \texttt{uint16}                     & \texttt{system.uint16}   & \texttt{ushort}   \\
+  \texttt{int32}                      & \texttt{system.int32}    & \texttt{int}      \\
+  \texttt{uint32}                     & \texttt{system.uint32}   & \texttt{uint}     \\
+  \texttt{int64}                      & \texttt{system.int64}    & \texttt{long}     \\
+  \texttt{uint64}                     & \texttt{system.uint64}   & \texttt{ulong}    \\
+  \texttt{float32}, \texttt{single}   & \texttt{system.single}   & \texttt{float}    \\
+  \texttt{float64}, \texttt{double}   & \texttt{system.double}   & \texttt{double}   \\
+  \texttt{char}                       & \texttt{system.char}     & \texttt{char}     \\
+  \texttt{string}                     & \texttt{system.string}   & \texttt{string}   \\
+  \texttt{object}                     & \texttt{system.object}   & \texttt{object}   \\
+  \texttt{decimal}                    & \texttt{system.decimal}  & \texttt{decimal}  \\
+  \texttt{datetime}                   & \texttt{system.datetime} & \texttt{DateTime} \\
+  \texttt{timespan}                   & \texttt{system.timespan} & \texttt{TimeSpan} \\
+  \texttt{guid}                       & \texttt{system.guid}     & \texttt{Guid}     \\
+  \bottomrule
+\end{longtable}
+
+\subsection{User-Defined Types}
+
+User-defined types declared in the module are managed by the VM as
+\typename{ManagedObject} instances at runtime. Each instance carries:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item A \textbf{type name string} (\code{TypeName}).
+  \item A \textbf{field dictionary} (\code{Dictionary<string, object?>}) for
+    named instance fields.
+  \item An optional \textbf{CLR backing object} (see
+    Section~\ref{sec:clrtype}).
+  \item Attached \textbf{attribute instances} (see
+    Section~\ref{sec:attributes}).
+  \item Arbitrary \textbf{metadata slots}.
+\end{itemize}
+
+\subsection{CLR-Backed Types}
+\label{sec:clrtype}
+
+Any CLR type registered via \code{RegisterClrType} is treated as a
+first-class IR type. When \texttt{newobj} creates an instance the runtime
+calls \code{Activator.CreateInstance} and stores the result as the
+\code{ClrInstance} of the wrapping \typename{ManagedObject}. Field and
+method access falls through to reflection on the real CLR object.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Instruction Set Reference}
+\label{sec:isa}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The execution engine is a \textbf{stack machine}. The call stack is a
+\code{Stack<CallFrame>}; each frame owns:
+
+\begin{itemize}[leftmargin=1.8em, noitemsep]
+  \item An evaluation stack (\code{Stack<object?>}).
+  \item A named argument table and local variable table.
+  \item A pending-exception slot.
+  \item A program counter (instruction index within the method body).
+\end{itemize}
+
+All operands are stored as raw \typename{JsonElement} values and decoded
+lazily by the instruction handler.
+
+\subsection{Stack Manipulation}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{nop}    & No-operation. \\
+  \opcode{dup}    & Duplicate the top value on the evaluation stack. \\
+  \opcode{pop}    & Discard the top value. \\
+  \opcode{ldnull} & Push \texttt{null} onto the stack. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Load Constants}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldc}    & Push a typed constant. Operand: \code{\{value, type\}}. \texttt{type}
+                    defaults to \texttt{int64}. \\
+  \opcode{ldc.i4} & Push a 32-bit integer constant. \\
+  \opcode{ldc.i8} & Push a 64-bit integer constant. \\
+  \opcode{ldc.r4} & Push a 32-bit float constant. \\
+  \opcode{ldc.r8} & Push a 64-bit float constant (double). \\
+  \opcode{ldstr}  & Push a string constant. Operand: \code{\{value\}} or bare string. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Arguments and Local Variables}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldarg}  & Push a method argument by index or name. Index \texttt{0} (or name
+                    \texttt{this}) is the receiver for instance methods. \\
+  \opcode{starg}  & Pop a value and store it in a named argument slot. \\
+  \opcode{ldloc}  & Push a local variable by name. \\
+  \opcode{stloc}  & Pop a value and store it in a named local variable. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Field Access}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{ldfld}  & Pop an object from the stack (or use \texttt{this}) and push the
+                    named instance field. If the object has a CLR backing instance,
+                    reflection is used to read the corresponding property/field. \\
+  \opcode{stfld}  & Pop a value, then pop an object; store the value in the named
+                    instance field. Writes through to the CLR backing instance when
+                    present. \\
+  \opcode{ldsfld} & Push a static field. Operand:
+                    \code{\{field: \{declaringType, name\}\}}. \\
+  \opcode{stsfld} & Pop a value and store it in a static field. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Arithmetic}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{add} & Pop $b$, pop $a$, push $a + b$. \\
+  \opcode{sub} & Pop $b$, pop $a$, push $a - b$. \\
+  \opcode{mul} & Pop $b$, pop $a$, push $a \times b$. \\
+  \opcode{div} & Pop $b$, pop $a$, push $a \div b$. \\
+  \opcode{rem} & Pop $b$, pop $a$, push $a \bmod b$. \\
+  \opcode{neg} & Pop $v$, push $-v$. \\
+  \bottomrule
+\end{longtable}
+
+If either operand is a \texttt{float}, \texttt{double}, or \texttt{string},
+both operands are promoted to \texttt{double} mode; otherwise integer
+(\texttt{int64}) mode is used. String concatenation applies for
+\opcode{add} when either operand is a \texttt{string}.
+
+\subsection{Logical}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{not} & Pop $v$, push \texttt{!ToBool($v$)}. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Comparison}
+
+Each opcode pops $b$ then $a$ and pushes a \texttt{bool}.
+
+\begin{longtable}{ll}
+  \toprule
+  \textbf{Opcode} & \textbf{Condition} \\
+  \midrule
+  \endhead
+  \opcode{ceq} & $a = b$ \\
+  \opcode{cne} & $a \neq b$ \\
+  \opcode{cgt} & $a > b$ \\
+  \opcode{cge} & $a \geq b$ \\
+  \opcode{clt} & $a < b$ \\
+  \opcode{cle} & $a \leq b$ \\
+  \bottomrule
+\end{longtable}
+
+String comparisons use \code{StringComparison.Ordinal}. Boolean operands
+are supported for \opcode{ceq}/\opcode{cne}. All other operands are promoted
+to \texttt{double} before comparison.
+
+\subsection{Type Conversion and Testing}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{conv}      & Pop a value and push it converted to the named target type.
+                       Uses \typename{ValueHelpers}\code{.ConvertTo}. \\
+  \opcode{castclass} & Assert that the top-of-stack \typename{ManagedObject} has the
+                       expected type name; throws \typename{InvalidCastException} if it
+                       does not. \\
+  \opcode{isinst}    & Pop a value; push \texttt{true} if it is a
+                       \typename{ManagedObject} with the given type name, otherwise
+                       \texttt{false}. \\
+  \bottomrule
+\end{longtable}
+
+\begin{warnbox}
+\textbf{Limitation:} \opcode{castclass} and \opcode{isinst} perform
+\emph{exact} type name matching only. Inheritance-aware checks for IR-defined
+types are not supported in the current version.
+\end{warnbox}
+
+\subsection{Object and Array Creation}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{newobj}  & Create a new \typename{ManagedObject} of the named type. If the
+                     type is registered as a CLR type, a real CLR instance is created
+                     via \code{Activator.CreateInstance} and attached to the wrapper. \\
+  \opcode{newarr}  & Push a new \code{List<object?>} (dynamically-typed, variable-length
+                     array). \\
+  \opcode{ldelem}  & Pop an index (0-based), pop an array, push \code{array[index]}. \\
+  \opcode{stelem}  & Pop a value, pop an index, pop an array;
+                     set \code{array[index] = value}. \\
+  \bottomrule
+\end{longtable}
+
+\begin{notebox}
+Arrays in ObjectIR v2 are implemented as \code{List<object?>}. Typed arrays
+(e.g.\ \texttt{int[]} or \texttt{float[]}) are not distinguished at runtime.
+\end{notebox}
+
+\subsection{Method Calls}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode}  & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{call}     & Static or instance call. Pops arguments in declaration order
+                      (left-to-right), then pops the instance for non-static targets.
+                      Operand: \code{\{method: \{declaringType, name, returnType,
+                      parameterTypes[]\}\}}. \\
+  \opcode{callvirt} & Virtual call. Identical to \opcode{call} but additionally
+                      dispatches through the virtual method table if the target is an
+                      IR-defined \typename{ManagedObject}. \\
+  \opcode{ret}      & Return from the current frame. If a value is present on the
+                      evaluation stack it is transferred to the caller's stack. \\
+  \bottomrule
+\end{longtable}
+
+\subsubsection{Call Resolution Order}
+
+Both \opcode{call} and \opcode{callvirt} apply the following dispatch
+sequence on every invocation:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Exact native lookup.} Full signature match in the
+    \code{\_nativeMethods} dictionary (e.g.\
+    \code{System.Console.WriteLine(string)}).
+  \item \textbf{Simplified native lookup.} Parameter types reduced to
+    unqualified, lower-case short names (e.g.\
+    \code{System.String} $\to$ \code{string}) and re-tried.
+  \item \textbf{Reflection dispatch.} When
+    \code{EnableReflectionNativeMethods} is \texttt{true}, the CLR type
+    registry is consulted and the method is invoked via reflection on the
+    backing CLR instance.
+  \item \textbf{IR method dispatch.} Lookup in the loaded module's method
+    table.
+\end{enumerate}
+
+\subsection{Control Flow}
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Opcode}   & \textbf{Description} \\
+  \midrule
+  \endhead
+  \opcode{if}       & Evaluate a condition (see Section~\ref{sec:conditions}); if
+                      truthy execute \code{thenBlock}, otherwise execute the optional
+                      \code{elseBlock}. \\
+  \opcode{while}    & Repeatedly evaluate a condition and execute \code{body}.
+                      Supports \opcode{break} and \opcode{continue}. \\
+  \opcode{break}    & Exit the nearest enclosing \opcode{while} loop. Implemented
+                      via an internal \typename{BreakSignal} exception. \\
+  \opcode{continue} & Skip to the next iteration of the nearest \opcode{while}
+                      loop. Implemented via \typename{ContinueSignal}. \\
+  \opcode{try}      & Structured exception handling with \code{tryBlock}, zero or
+                      more \code{catchBlock}s, and an optional
+                      \code{finallyBlock}. \\
+  \opcode{throw}    & Pop a value and store it as the pending exception on the
+                      current frame. \\
+  \bottomrule
+\end{longtable}
+
+\subsubsection{Condition System}
+\label{sec:conditions}
+
+Conditions embedded in \opcode{if} or \opcode{while} operands are
+\typename{ConditionDto} objects evaluated by the \code{EvaluateCondition}
+helper:
+
+\begin{longtable}{lp{10cm}}
+  \toprule
+  \textbf{Kind}       & \textbf{Evaluation} \\
+  \midrule
+  \endhead
+  \code{stack}      & Pop the top-of-stack value and coerce it to \texttt{bool}.
+                      An empty stack is treated as \texttt{false}. \\
+  \code{binary}     & Pop $r$, pop $l$; compare using the specified
+                      \code{operation} opcode (\opcode{ceq}, \opcode{cgt}, etc.). \\
+  \code{expression} & Execute a single embedded \typename{InstructionDto} and pop
+                      the result. \\
+  \code{block}      & Execute a sequence of \typename{InstructionDto}s and pop the
+                      final result. \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{FOB/IR v3 Binary Format}
+\label{sec:fob}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The FOB/IR v3 binary format provides a compact, pre-parsed representation of
+an ObjectIR module. Loading a binary module is a two-stage process:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \typename{FobIrReader} strips the FOB envelope (magic bytes, header,
+    compression metadata).
+  \item \typename{IrModuleBinaryReader} decodes the payload into a
+    \typename{ModuleDto} equivalent.
+\end{enumerate}
+
+\subsection{Binary Format Summary}
+
+\begin{longtable}{lp{9cm}}
+  \toprule
+  \textbf{Section} & \textbf{Contents} \\
+  \midrule
+  \endhead
+  Header     & Magic number, format version, module name, version triple. \\
+  Type table & Sequential \typename{TypeDto} records (kind, name, namespace,
+               fields, methods, base type, interfaces). \\
+  Method body & Per-method: parameter list, local variable list, instruction
+               count, instruction records. \\
+  String pool & Interned string table referenced by index throughout the
+               binary. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{Binary Opcode Map}
+
+Each instruction is serialised as a 1-byte opcode followed by a
+variable-length operand. The byte values mirror the \typename{OpCodes} enum
+defined in \code{ObjectIR.Core}.
+
+\begin{longtable}{llll}
+  \toprule
+  \textbf{Byte} & \textbf{Mnemonic} & \textbf{Byte} & \textbf{Mnemonic} \\
+  \midrule
+  \endhead
+  \texttt{0x00} & \texttt{nop}      & \texttt{0x10} & \texttt{ldsfld}   \\
+  \texttt{0x01} & \texttt{ldc}      & \texttt{0x11} & \texttt{stsfld}   \\
+  \texttt{0x02} & \texttt{ldstr}    & \texttt{0x12} & \texttt{newobj}   \\
+  \texttt{0x03} & \texttt{ldarg}    & \texttt{0x13} & \texttt{newarr}   \\
+  \texttt{0x04} & \texttt{starg}    & \texttt{0x14} & \texttt{ldelem}   \\
+  \texttt{0x05} & \texttt{ldloc}    & \texttt{0x15} & \texttt{stelem}   \\
+  \texttt{0x06} & \texttt{stloc}    & \texttt{0x16} & \texttt{call}     \\
+  \texttt{0x07} & \texttt{add}      & \texttt{0x17} & \texttt{callvirt} \\
+  \texttt{0x08} & \texttt{sub}      & \texttt{0x18} & \texttt{ret}      \\
+  \texttt{0x09} & \texttt{mul}      & \texttt{0x19} & \texttt{if}       \\
+  \texttt{0x0A} & \texttt{div}      & \texttt{0x1A} & \texttt{while}    \\
+  \texttt{0x0B} & \texttt{rem}      & \texttt{0x1B} & \texttt{break}    \\
+  \texttt{0x0C} & \texttt{neg}      & \texttt{0x1C} & \texttt{continue} \\
+  \texttt{0x0D} & \texttt{ceq}      & \texttt{0x1D} & \texttt{try}      \\
+  \texttt{0x0E} & \texttt{cne}      & \texttt{0x1E} & \texttt{throw}    \\
+  \texttt{0x0F} & \texttt{ldfld}    & \texttt{0x1F} & \texttt{conv}     \\
+  \texttt{0x20} & \texttt{castclass}& \texttt{0x21} & \texttt{isinst}   \\
+  \texttt{0x22} & \texttt{dup}      & \texttt{0x23} & \texttt{pop}      \\
+  \texttt{0x24} & \texttt{ldnull}   & \texttt{0x25} & \texttt{not}      \\
+  \texttt{0x26} & \texttt{cgt}      & \texttt{0x27} & \texttt{cge}      \\
+  \texttt{0x28} & \texttt{clt}      & \texttt{0x29} & \texttt{cle}      \\
+  \texttt{0x2A} & \texttt{stfld}    & \texttt{0x2B} & \texttt{ldc.i4}   \\
+  \texttt{0x2C} & \texttt{ldc.i8}   & \texttt{0x2D} & \texttt{ldc.r4}   \\
+  \texttt{0x2E} & \texttt{ldc.r8}   &               &                   \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Runtime API}
+\label{sec:api}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Constructor}
+
+\begin{lstlisting}[style=cs]
+// Standalone (Lattice) runtime:
+public IRRuntime(string? irSource = null,
+                 bool enableReflectionNativeMethods = false)
+
+// Unity-aware runtime:
+public UnityIRRuntime(GameObject? owner = null)
+\end{lstlisting}
+
+On first instantiation (per process) both constructors trigger a one-time,
+thread-safe registration of all built-in CLR types
+(\code{EnsureBuiltinTypesRegistered}) followed by setup of the pre-registered
+native method bindings (\code{RegisterManualBindings}).
+
+\subsection{Module Loading}
+
+\begin{lstlisting}[style=cs]
+// Load from string (auto-detects TextIR / JSON)
+public void LoadModule(string input, InputFormat format = InputFormat.Auto)
+
+// Load from a pre-parsed ModuleNode AST
+public void LoadModule(ModuleNode astModule)
+
+// Load from raw FOB/IR v3 binary bytes
+public void LoadModule(byte[] fobBytes)
+
+// Convenience: read a FOB file from disk
+public void LoadFobFile(string path)
+
+// Full reset: clears call stack and static fields, then loads
+public void LoadProgram(string input, InputFormat format = InputFormat.Auto)
+\end{lstlisting}
+
+\subsection{Execution}
+
+\begin{lstlisting}[style=cs]
+// Execute static Program.Main() (no parameters)
+public void Run()
+
+// Invoke any method by qualified name
+public object? CallMethod(string qualifiedName, params object?[] args)
+
+// Generic variant with automatic return-value conversion
+public TResult CallMethod<TResult>(string qualifiedName, params object?[] args)
+\end{lstlisting}
+
+\code{qualifiedName} follows the format \texttt{"TypeName.MethodName"} or
+just \texttt{"MethodName"} for unqualified lookup. Throws
+\typename{InvalidOperationException} when no module is loaded or the type
+cannot be found; throws \typename{MissingMethodException} when the method
+is absent.
+
+\subsection{Module Inspection}
+
+\begin{lstlisting}[style=cs]
+// Returns true if the loaded module contains the specified method
+public bool HasMethod(string qualifiedName)
+\end{lstlisting}
+
+This performs IR metadata inspection only — no code is executed.
+
+\subsection{Static Field Access}
+
+\begin{lstlisting}[style=cs]
+// Two-argument form
+public object? GetStaticField(string declaringType, string fieldName)
+
+// "TypeName.FieldName" single-string form
+public object? GetStaticField(string qualifiedName)
+\end{lstlisting}
+
+\subsection{Observability Hooks}
+
+\begin{lstlisting}[style=cs]
+// Invoked before every instruction (debugger / profiler hook)
+public Action<CallFrame, InstructionDto>? OnStep { get; set; }
+
+// Invoked when an unhandled exception escapes the execution loop
+public Action<Exception>? OnException { get; set; }
+\end{lstlisting}
+
+\subsection{Public Properties}
+
+\begin{longtable}{p{5.5cm}p{2.2cm}p{6cm}}
+  \toprule
+  \textbf{Property} & \textbf{Type} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \code{CallStack}                      & \code{IReadOnlyList} \code{<CallFrame>} &
+    Read-only view of the call stack (outermost first). \\[0.4em]
+  \code{StaticFields}                   & \code{IReadOnlyDictionary} &
+    All static field values written by \code{stsfld}, keyed by
+    \code{(declaringType, fieldName)}. \\[0.4em]
+  \code{EnableReflectionNativeMethods}  & \code{bool} &
+    When \code{true}, unresolved calls are retried via CLR reflection before
+    consulting the IR method table. \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{CLR Type Registration}
+\label{sec:clrreg}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Host code registers CLR types so the VM can instantiate them, access their
+fields, and invoke their methods as if they were IR-defined.
+
+\begin{lstlisting}[style=cs]
+// Register by type parameter (CLR FullName used as IR name by default)
+IRRuntime.RegisterClrType<MyService>();
+
+// Register with a custom IR name
+IRRuntime.RegisterClrType<MyService>("Services.MyService");
+
+// Register via a Type object
+IRRuntime.RegisterClrType("Services.MyService", typeof(MyService));
+\end{lstlisting}
+
+The registration is \textbf{process-global} (stored in a static, thread-safe
+dictionary). Once registered:
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \opcode{newobj} creates a real CLR instance via
+    \code{Activator.CreateInstance} and attaches it to the
+    \typename{ManagedObject} wrapper.
+  \item \opcode{ldfld} / \opcode{stfld} use reflection to read/write
+    properties and fields on the CLR instance, falling back to the VM field
+    dictionary if the member is not found.
+  \item \opcode{ldsfld} / \opcode{stsfld} reflectively access static CLR
+    fields and properties.
+  \item Reflected \opcode{call}/\opcode{callvirt} receive the real CLR
+    instance, not the \typename{ManagedObject} wrapper.
+\end{itemize}
+
+\subsection{Example}
+
+\begin{lstlisting}[style=cs]
+public class Counter {
+    public int Value { get; set; }
+    public void Increment() => Value++;
+    public int GetValue() => Value;
+}
+
+IRRuntime.RegisterClrType<Counter>("Counter");
+
+var rt = new IRRuntime("""
+    module CounterDemo version 1.0.0
+
+    class Program {
+        static method Main() -> void {
+            newobj Counter
+            callvirt Counter.Increment() -> void
+            callvirt Counter.GetValue() -> int32
+            call System.Console.WriteLine(int32) -> void
+            ret
+        }
+    }
+""", enableReflectionNativeMethods: true);
+
+rt.Run(); // prints: 1
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Native Method Registration}
+\label{sec:native}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Delegate Signature}
+
+\begin{lstlisting}[style=cs]
+public delegate object? NativeMethod(object? instance, object?[] args);
+\end{lstlisting}
+
+\code{instance} is \code{null} for static calls and a \typename{ManagedObject}
+(wrapping \texttt{this}) for instance/virtual calls. \code{args} contains
+positional arguments popped from the evaluation stack in declaration order.
+
+\subsection{Registration}
+
+\begin{lstlisting}[style=cs]
+public void RegisterNativeMethod(string signature, NativeMethod method)
+\end{lstlisting}
+
+Adds or replaces a native binding in the instance-level
+\code{\_nativeMethods} dictionary. The \code{signature} format is:
+
+\[
+\texttt{DeclaringType.MethodName(param1Type,param2Type,...)}
+\]
+
+Both the fully-qualified form (e.g.\ \texttt{System.String}) and the short
+lower-case form (e.g.\ \texttt{string}) are tried automatically during
+dispatch, so registering either form covers both.
+
+\subsection{Built-in Native Methods}
+
+The following methods are pre-registered on every runtime instance.
+
+\begin{longtable}{lp{7.5cm}}
+  \toprule
+  \textbf{Signature} & \textbf{Behaviour} \\
+  \midrule
+  \endhead
+  \texttt{System.Console.WriteLine(string)}        & \code{Console.WriteLine(args[0])} \\
+  \texttt{System.Console.WriteLine(int32)}         & \code{Console.WriteLine(args[0])} \\
+  \texttt{System.Console.WriteLine(object)}        & \code{Console.WriteLine(args[0])} \\
+  \texttt{System.Console.WriteLine(string,string)} & Concatenates args and writes a line \\
+  \texttt{System.Console.WriteLine(string,object)} & \code{string.Format} then writes a line \\
+  \texttt{System.Console.Write(string)}            & \code{Console.Write(args[0])} \\
+  \texttt{System.Console.Write(string,string)}     & Concatenates args and writes \\
+  \texttt{System.Console.ReadLine()}               & Returns \code{Console.ReadLine()} \\
+  \texttt{System.Console.Clear()}                  & \code{Console.Clear()} \\
+  \texttt{System.Console.Beep()}                   & \code{Console.Beep()} \\
+  \texttt{System.String.Concat(string,string)}     & \code{string.Concat(args[0], args[1])} \\
+  \texttt{System.String.Format(string,object)}     & \code{string.Format(fmt, args[1])} \\
+  \texttt{System.String.Format(string,object,object)} & \code{string.Format(fmt, a, b)} \\
+  \texttt{System.String.IsNullOrEmpty(string)}     & \code{string.IsNullOrEmpty(args[0])} \\
+  \texttt{System.Object.ToString()}                & \code{instance?.ToString()} \\
+  \texttt{System.Object.GetType()}                 & \code{instance?.GetType()} \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Value Coercion}
+\label{sec:coerce}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\typename{ValueHelpers} provides stateless type coercion used throughout the
+runtime. The \code{ToBool}, \code{ToLong}, \code{ToDouble}, and \code{ConvertTo}
+methods apply the following rules:
+
+\begin{longtable}{lp{9.5cm}}
+  \toprule
+  \textbf{Target type} & \textbf{Conversion rule} \\
+  \midrule
+  \endhead
+  \texttt{bool}   & \texttt{null}, \texttt{0}, and \texttt{""} convert to
+                    \texttt{false}; all other values convert to \texttt{true}.
+                    Numeric-string \texttt{"0"} also converts to \texttt{false}. \\
+  \texttt{long}   & Numeric types are truncated/cast. Strings are parsed with
+                    \code{CultureInfo.InvariantCulture}. \\
+  \texttt{double} & Same as \texttt{long} but without truncation. \\
+  \texttt{string} & \code{value.ToString()}, or \texttt{null} if \code{value}
+                    is \texttt{null}. \\
+  CLR value type  & Typed fast-paths (\texttt{int}, \texttt{float}, etc.) then
+                    \code{Convert.ChangeType} fallback. \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Exception Model}
+\label{sec:exceptions}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Raising Exceptions}
+
+The \opcode{throw} instruction pops any value from the evaluation stack
+(a \typename{ManagedObject}, a CLR \typename{Exception}, or a plain
+\texttt{string}) and stores it as \code{frame.PendingException}.
+
+\subsection{Structured Handling}
+
+The \opcode{try} instruction provides first-class structured exception
+handling with \code{tryBlock}, zero or more \code{catchBlock}s, and an
+optional \code{finallyBlock}. Catch clauses match in declaration order:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Catch-all} (no type specified) — matches anything.
+  \item \textbf{IR type name match} — the pending exception is a
+    \typename{ManagedObject} whose \code{TypeName} equals the catch type.
+  \item \textbf{CLR type match} — \code{Type.IsAssignableFrom} check
+    against the CLR type registered for the catch-type name.
+\end{enumerate}
+
+If no catch clause matches, the pending exception propagates up the call
+stack. At the top of the stack it is delivered to the \code{OnException}
+callback.
+
+\subsection{Control-Flow Sentinels}
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \typename{BreakSignal} — lightweight internal \typename{Exception}
+    used to implement \opcode{break}. Caught exclusively inside the
+    \opcode{while} instruction handler; never visible to user code.
+  \item \typename{ContinueSignal} — same mechanism for \opcode{continue}.
+  \item \typename{ExceptionSignal} — carries an unhandled IR exception
+    object out of the execution loop to the host when no catch block
+    matches.
+\end{itemize}
+
+\subsection{Exception-to-CLR Conversion}
+
+When an IR \typename{ManagedObject} exception escapes unhandled, the runtime
+constructs a CLR \typename{Exception} with:
+
+\begin{itemize}[leftmargin=1.8em, noitemsep]
+  \item The IR type name and \code{message} field (if present) as the
+    exception message.
+  \item A source location extracted from the instruction operand
+    (\texttt{location}, \texttt{loc}, or \texttt{sourceLocation} JSON
+    properties; line number from \texttt{line}, \texttt{startLine}, or
+    \texttt{start}).
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Attributes}
+\label{sec:attributes}
+% ══════════════════════════════════════════════════════════════════════════════
+
+Custom attributes can be applied to IR types, fields, and methods using the
+\texttt{@AttributeName(args)} syntax in TextIR. At runtime:
+
+\begin{enumerate}[leftmargin=2em]
+  \item The runtime instantiates each attribute as a \typename{ManagedObject}
+    via \code{AttachAttributesFromIR}.
+  \item Attribute instances are stored in a list on the target
+    \typename{ManagedObject}.
+  \item Host code retrieves them with:
+\end{enumerate}
+
+\begin{lstlisting}[style=cs]
+ManagedObject instance = ...;
+var attr = instance.GetAttribute<MyManagedAttribute>();
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Data-Transfer Object Types}
+\label{sec:dto}
+% ══════════════════════════════════════════════════════════════════════════════
+
+These types form the in-memory representation of a compiled IR module and are
+shared across all runtime variants (Lattice standalone, UnityIRRuntime, etc.).
+
+\subsection{\texttt{ModuleDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class ModuleDto
+{
+    public string      name       { get; set; }
+    public string      version    { get; set; }
+    public TypeDto[]   types      { get; set; }
+    public JsonElement functions  { get; set; }  // reserved
+}
+\end{lstlisting}
+
+Top-level container. \code{types} holds all class/interface definitions.
+\code{functions} is reserved for future module-level free functions.
+
+\subsection{\texttt{TypeDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class TypeDto
+{
+    public string     kind;        // "class" | "interface" | "struct" | "enum"
+    public string     name;
+    public string?    _namespace;
+    public string?    baseType;
+    public FieldDto[]  fields;
+    public MethodDto[] methods;
+    public JsonElement baseInterfaces, genericParameters, properties;
+}
+\end{lstlisting}
+
+\subsection{\texttt{MethodDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class MethodDto
+{
+    public string            name, returnType;
+    public bool              isStatic, isVirtual, isOverride, isAbstract;
+    public ParameterDto[]    parameters;
+    public LocalVariableDto[] locals;
+    public InstructionDto[]  instructions;
+    public AttributeDto[]    attributes;
+}
+\end{lstlisting}
+
+\subsection{\texttt{InstructionDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class InstructionDto
+{
+    public string      opCode  { get; set; }
+    public JsonElement operand { get; set; }
+}
+\end{lstlisting}
+
+The operand is kept as a raw \typename{JsonElement} so the VM can lazily
+decode only the fields required by each opcode.
+
+\subsection{\texttt{CallTargetDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class CallTargetDto
+{
+    public string   declaringType;
+    public string   name;
+    public string   returnType;
+    public string[] parameterTypes;
+}
+\end{lstlisting}
+
+The lookup key is assembled as:
+\[
+\texttt{declaringType.name(parameterTypes[0],parameterTypes[1],...)}
+\]
+
+\subsection{\texttt{ConditionDto}}
+
+\begin{lstlisting}[style=cs]
+public sealed class ConditionDto
+{
+    public string           kind;       // "stack"|"binary"|"expression"|"block"
+    public string?          operation;  // for "binary" kind
+    public InstructionDto[] body;       // for "block" kind
+    public ConditionKind    Kind { get; }  // computed enum
+}
+\end{lstlisting}
+
+\subsection{Supporting DTOs}
+
+\begin{longtable}{lp{9.5cm}}
+  \toprule
+  \textbf{Type} & \textbf{Purpose} \\
+  \midrule
+  \endhead
+  \typename{FieldDto}         & Field declaration (name, type, static flag, attributes). \\
+  \typename{ParameterDto}     & Method parameter (name, type). \\
+  \typename{LocalVariableDto} & Local variable declaration (name, type). \\
+  \typename{AttributeDto}     & Custom attribute application (name, positional args). \\
+  \typename{FieldRefDto}      & Reference to a field (\code{declaringType}, \code{name}). \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Runtime Support Types}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{\texttt{CallFrame}}
+
+Represents a single activation record on the call stack.
+
+\begin{longtable}{lp{9.5cm}}
+  \toprule
+  \textbf{Member} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \code{Method}           & The \typename{MethodDto} being executed. \\
+  \code{Stack}            & The per-frame evaluation stack (\code{Stack<object?>}). \\
+  \code{Locals}           & Named local variable dictionary. \\
+  \code{Args}             & Named argument dictionary (includes \texttt{this}). \\
+  \code{IP}               & Current instruction index (program counter). \\
+  \code{PendingException} & Exception object awaiting a catch clause, or \code{null}. \\
+  \code{ReturnValue}      & Value returned by a nested call, or \code{null}. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{\texttt{ManagedObject}}
+
+Represents any heap-allocated value in the IR runtime (classes, value-type
+wrappers, exception objects, \ldots).
+
+\begin{longtable}{lp{9.5cm}}
+  \toprule
+  \textbf{Member} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \code{TypeName}    & IR type name string. \\
+  \code{Fields}      & \code{Dictionary<string, object?>} of instance field values. \\
+  \code{ClrInstance} & Optional CLR backing object (\code{object?}). \\
+  \code{Attributes}  & List of attached \typename{AttributeDto} instances. \\
+  \code{Metadata}    & Arbitrary key/value metadata dictionary. \\
+  \bottomrule
+\end{longtable}
+
+\subsection{\texttt{ValueHelpers}}
+
+A stateless, \kword{internal static} helper class.
+
+\begin{longtable}{lp{9cm}}
+  \toprule
+  \textbf{Method} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \code{ToBool(object?)}          & Coerce any value to \texttt{bool} (see Section~\ref{sec:coerce}). \\
+  \code{ToLong(object?)}          & Coerce to \texttt{long}. \\
+  \code{ToDouble(object?)}        & Coerce to \texttt{double}. \\
+  \code{ConvertTo(object?, Type)} & General-purpose type conversion with fast-path table. \\
+  \code{ArithmeticMode(a, b)}     & Returns \code{Float} or \code{Int} based on operand types. \\
+  \bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Thread Safety}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{itemize}[leftmargin=1.8em]
+  \item The \textbf{process-global CLR type registry}
+    (\code{s\_registeredClrTypes}) is protected by a static
+    \code{ReaderWriterLockSlim} and is safe for concurrent reads and
+    infrequent writes.
+  \item \textbf{Individual runtime instances} are not thread-safe. A single
+    \code{IRRuntime} / \code{UnityIRRuntime} must not be called from multiple
+    threads simultaneously.
+  \item \textbf{One-time initialisation} of built-in type registrations and
+    manual bindings is protected by a static lock and runs at most once per
+    process.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Worked Examples}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Hello World}
+
+\begin{lstlisting}[style=textir, caption={Hello World in TextIR}]
+module HelloWorld version 1.0.0
+
+class Program {
+    static method Main() -> void {
+        ldstr "Hello, World!"
+        call System.Console.WriteLine(string) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Fibonacci}
+
+\begin{lstlisting}[style=textir, caption={Recursive Fibonacci}]
+module Fibonacci version 1.0.0
+
+class Program {
+    static method Fib(n: int32) -> int32 {
+        local result: int32
+
+        ldarg n
+        ldc { "value": 2, "type": "int32" }
+        clt
+        if {
+            "kind": "stack",
+            "thenBlock": [
+                { "opCode": "ldarg", "operand": "n" },
+                { "opCode": "ret" }
+            ]
+        }
+
+        ldarg n
+        ldc { "value": 1, "type": "int32" }
+        sub
+        call Program.Fib(int32) -> int32
+        ldarg n
+        ldc { "value": 2, "type": "int32" }
+        sub
+        call Program.Fib(int32) -> int32
+        add
+        ret
+    }
+
+    static method Main() -> void {
+        ldc { "value": 10, "type": "int32" }
+        call Program.Fib(int32) -> int32
+        call System.Console.WriteLine(int32) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+\subsection{Instance Classes and Fields}
+
+\begin{lstlisting}[style=textir, caption={Instance class with constructor}]
+module ClassDemo version 1.0.0
+
+class Vector2D {
+    field x: float32
+    field y: float32
+
+    constructor(x: float32, y: float32) {
+        ldarg this
+        ldarg x
+        stfld x
+        ldarg this
+        ldarg y
+        stfld y
+        ret
+    }
+
+    method Length() -> float32 {
+        ldarg this
+        ldfld x
+        ldarg this
+        ldfld x
+        mul
+        ldarg this
+        ldfld y
+        ldarg this
+        ldfld y
+        mul
+        add
+        call System.Math.Sqrt(float64) -> float64
+        conv float32
+        ret
+    }
+}
+
+class Program {
+    static method Main() -> void {
+        ldc { "value": 3.0, "type": "float32" }
+        ldc { "value": 4.0, "type": "float32" }
+        newobj Vector2D
+        callvirt Vector2D.Length() -> float32
+        call System.Console.WriteLine(object) -> void
+        ret
+    }
+}
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Limitations and Known Gaps}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{warnbox}
+The following features are not yet supported in ObjectIR v2:
+\end{warnbox}
+
+\begin{itemize}[leftmargin=1.8em]
+  \item \textbf{Generics.} Generic type parameters and generic method
+    instantiation are not supported. All generic APIs must be accessed
+    through native bindings or reflection.
+  \item \textbf{Typed arrays.} Arrays are implemented as
+    \code{List<object?>}; \texttt{int[]} and \texttt{float[]} are not
+    distinguished at runtime.
+  \item \textbf{Exact-match only for \opcode{castclass} / \opcode{isinst}.}
+    Inheritance chains for IR-defined types are not walked; only exact
+    \code{TypeName} string equality is checked.
+  \item \textbf{Constructor arguments for CLR-backed types.} \opcode{newobj}
+    uses the parameterless \code{Activator.CreateInstance}; constructor
+    arguments must be passed via native method wrappers or IR constructors
+    that \opcode{stfld} after creation.
+  \item \textbf{Module-level free functions.} The \code{functions} field on
+    \typename{ModuleDto} is reserved and not yet executed by the VM.
+  \item \textbf{Concurrency.} Individual runtime instances are single-threaded.
+    Executing IR code from multiple threads on the same instance is not safe.
+\end{itemize}
+
+\end{document}
