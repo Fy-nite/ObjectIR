@@ -153,7 +153,7 @@
   \centering
   \vspace*{3cm}
   {\Huge\bfseries ObjectIR}\\[0.5em]
-  {\large\bfseries Version 2}\\[0.8em]
+  {\large\bfseries Version 3}\\[0.8em]
   {\Large Language Specification}\\[2.5em]
   \rule{0.55\linewidth}{0.4pt}\\[1.2em]
   {\normalsize
@@ -183,12 +183,20 @@
 designed to be simple to parse, simple to execute, and straightforward to
 target from higher-level languages or toolchains.
 
+\begin{notebox}
+	All of the examples shown in this document describe the TextIR variant of ObjectIR. see section~\ref{sec:TextIRFeatures} for more information about what TextIR is.
+\end{notebox}
+
+
 A program is expressed as one or more \emph{modules}, each containing class
 and interface definitions whose methods are composed of explicit stack-machine
 instructions. The IR sits at the same conceptual level as JVM bytecode or
-CIL, but its primary surface format (\emph{TextIR}) is human-readable and
+CIL, but its surface format (\emph{TextIR}) is human-readable and
 hand-writable.
 
+\begin{notebox}
+people working should use the ~\ref{sec:fob} Fob format for proper use cases and TextIR should only be used when 
+\end{notebox}
 \subsection{Design Goals}
 
 \begin{itemize}[leftmargin=1.8em]
@@ -217,6 +225,8 @@ hand-writable.
     written \term{like-this}.
   \item Instruction mnemonics are typeset \opcode{like-this}.
   \item Type names are typeset \typename{like-this}.
+  \item this document describes information for "conforming" runtime's.
+  not everything is covered in this document. for more information, please refer to the reference runtime for wishing to use ObjectIR with a runtime instead of transpilation.
 \end{itemize}
 
 % ══════════════════════════════════════════════════════════════════════════════
@@ -238,8 +248,7 @@ A well-formed module contains:
   \item An ordered list of \textbf{type definitions}: classes, interfaces,
     structs, and enums.
   \item A (reserved) \textbf{free-function table}, intended for future
-    module-level functions outside any type. Runtimes must accept and ignore
-    this field if present.
+    module-level functions outside any type. 
 \end{itemize}
 
 \subsection{Module Identity}
@@ -552,7 +561,7 @@ Section~\ref{sec:schema}.
   \opcode{ldc.i8} & Push a 64-bit integer constant. Operand: bare integer. \\
   \opcode{ldc.r4} & Push a 32-bit float constant. Operand: bare number. \\
   \opcode{ldc.r8} & Push a 64-bit float constant. Operand: bare number. \\
-  \opcode{ldstr}  &
+  \opcode{load.str}  &
     Push a string constant.
     Operand: \code{"<Value>"} \\
   \bottomrule
@@ -565,13 +574,13 @@ Section~\ref{sec:schema}.
   \textbf{Opcode} & \textbf{Description} \\
   \midrule
   \endhead
-  \opcode{ldarg}  &
+  \opcode{load.arg}  &
     Push a method argument.
     Operand: parameter name or 0-based index.
     Index \texttt{0} / name \texttt{this} is the receiver. \\
-  \opcode{starg}  & Pop a value and store it in the named argument slot. \\
-  \opcode{ldloc}  & Push a local variable by name. \\
-  \opcode{stloc}  & Pop a value and store it in the named local variable. \\
+  \opcode{store.arg}  & Pop a value and store it in the named argument slot. \\
+  \opcode{load.loc}  & Push a local variable by name. \\
+  \opcode{store.loc}  & Pop a value and store it in the named local variable. \\
   \bottomrule
 \end{longtable}
 
@@ -582,18 +591,18 @@ Section~\ref{sec:schema}.
   \textbf{Opcode} & \textbf{Description} \\
   \midrule
   \endhead
-  \opcode{ldfld}  &
+  \opcode{load.fld}  &
     Pop an object (or use the implicit receiver) and push the value of the
     named instance field. If the object has a host backing, the runtime
     \textit{should} read the corresponding property on the host object
     before consulting the field store. \\
-  \opcode{stfld}  &
+  \opcode{store.fld}  &
     Pop a value, then pop an object; store the value in the named instance
     field (and on the host backing, if present). \\
-  \opcode{ldsfld} &
+  \opcode{load.sfld} &
     Push the value of a static field.
     Operand: \code{<Field name>}. \\
-  \opcode{stsfld} & Pop a value and store it in the named static field. \\
+  \opcode{store.sfld} & Pop a value and store it in the named static field. \\
   \bottomrule
 \end{longtable}
 
@@ -640,12 +649,12 @@ Each opcode pops $b$ then $a$ and pushes a \texttt{bool}.
   \textbf{Opcode} & \textbf{Condition} \\
   \midrule
   \endhead
-  \opcode{ceq} & $a = b$ \\
-  \opcode{cne} & $a \neq b$ \\
-  \opcode{cgt} & $a > b$ \\
-  \opcode{cge} & $a \geq b$ \\
-  \opcode{clt} & $a < b$ \\
-  \opcode{cle} & $a \leq b$ \\
+  \opcode{comp.eq} & $a = b$ \\
+  \opcode{comp.ne} & $a \neq b$ \\
+  \opcode{comp.gt} & $a > b$ \\
+  \opcode{comp.ge} & $a \geq b$ \\
+  \opcode{comp.lt} & $a < b$ \\
+  \opcode{comp.le} & $a \leq b$ \\
   \bottomrule
 \end{longtable}
 
@@ -685,25 +694,25 @@ of conforming implementations in this version but is strongly recommended.
   \textbf{Opcode}  & \textbf{Description} \\
   \midrule
   \endhead
-  \opcode{newobj}  &
+  \opcode{new.obj}  &
     Create a new managed object of the named type and push it. If the type
     is a registered host type, the runtime \textit{should} also construct
     the corresponding host backing object. \\
-  \opcode{newarr}  &
+  \opcode{new.arr}  &
     Push a new, empty, dynamically-typed array. \\
     optionaly with a type arg to set the type of the array.
     '\opcode{newarr int}'
-  \opcode{ldelem}  &
+  \opcode{load.elem}  &
     Pop an index (0-based integer), pop an array;
     push \texttt{array[index]}. \\
-  \opcode{stelem}  &
+  \opcode{store.elem}  &
     Pop a value, pop an index, pop an array;
     set \texttt{array[index] = value}. \\
   \bottomrule
 \end{longtable}
 
 \begin{notebox}
-Arrays in ObjectIR v2 are Static typed and variable-length. Typed array variants
+Arrays in ObjectIR v3 are Static typed and variable-length. Typed array variants
 (e.g.\ \texttt{int[]}) are Available in section~\ref{sec:Types}.
 \end{notebox}
 
@@ -892,28 +901,28 @@ operand.
   \textbf{Byte} & \textbf{Mnemonic} & \textbf{Byte} & \textbf{Mnemonic} \\
   \midrule
   \endhead
-  \texttt{0x00} & \texttt{nop}       & \texttt{0x10} & \texttt{ldsfld}   \\
-  \texttt{0x01} & \texttt{ldc}       & \texttt{0x11} & \texttt{stsfld}   \\
-  \texttt{0x02} & \texttt{ldstr}     & \texttt{0x12} & \texttt{newobj}   \\
-  \texttt{0x03} & \texttt{ldarg}     & \texttt{0x13} & \texttt{newarr}   \\
-  \texttt{0x04} & \texttt{starg}     & \texttt{0x14} & \texttt{ldelem}   \\
-  \texttt{0x05} & \texttt{ldloc}     & \texttt{0x15} & \texttt{stelem}   \\
-  \texttt{0x06} & \texttt{stloc}     & \texttt{0x16} & \texttt{call}     \\
-  \texttt{0x07} & \texttt{add}       & \texttt{0x17} & \texttt{callvirt} \\
-  \texttt{0x08} & \texttt{sub}       & \texttt{0x18} & \texttt{ret}      \\
+  \texttt{0x00} & \texttt{nop}       & \texttt{0x10} & \texttt{load.sfld}   \\
+  \texttt{0x01} & \texttt{ldc}       & \texttt{0x11} & \texttt{store.sfld}   \\
+  \texttt{0x02} & \texttt{load.str}     & \texttt{0x12} & \texttt{new.obj}   \\
+  \texttt{0x03} & \texttt{load.arg}     & \texttt{0x13} & \texttt{new.arr}   \\
+  \texttt{0x04} & \texttt{store.arg}     & \texttt{0x14} & \texttt{load.elem}   \\
+  \texttt{0x05} & \texttt{load.loc}     & \texttt{0x15} & \texttt{store.elem}   \\
+  \texttt{0x06} & \texttt{store.loc}     & \texttt{0x16} & \texttt{call}     \\
+  \texttt{0x07} & \texttt{add}       & \texttt{0x17} & \texttt{call.virt} \\
+  \texttt{0x08} & \texttt{sub}       & \texttt{0x18} & \texttt{return}      \\
   \texttt{0x09} & \texttt{mul}       & \texttt{0x19} & \texttt{if}       \\
   \texttt{0x0A} & \texttt{div}       & \texttt{0x1A} & \texttt{while}    \\
   \texttt{0x0B} & \texttt{rem}       & \texttt{0x1B} & \texttt{break}    \\
   \texttt{0x0C} & \texttt{neg}       & \texttt{0x1C} & \texttt{continue} \\
-  \texttt{0x0D} & \texttt{ceq}       & \texttt{0x1D} & \texttt{try}      \\
-  \texttt{0x0E} & \texttt{cne}       & \texttt{0x1E} & \texttt{throw}    \\
-  \texttt{0x0F} & \texttt{ldfld}     & \texttt{0x1F} & \texttt{conv}     \\
+  \texttt{0x0D} & \texttt{comp.eq}   & \texttt{0x1D} & \texttt{try}      \\
+  \texttt{0x0E} & \texttt{comp.ne}   & \texttt{0x1E} & \texttt{throw}    \\
+  \texttt{0x0F} & \texttt{load.fld}  & \texttt{0x1F} & \texttt{convert}     \\
   \texttt{0x20} & \texttt{castclass} & \texttt{0x21} & \texttt{isinst}   \\
   \texttt{0x22} & \texttt{dup}       & \texttt{0x23} & \texttt{pop}      \\
-  \texttt{0x24} & \texttt{ldnull}    & \texttt{0x25} & \texttt{not}      \\
-  \texttt{0x26} & \texttt{cgt}       & \texttt{0x27} & \texttt{cge}      \\
-  \texttt{0x28} & \texttt{clt}       & \texttt{0x29} & \texttt{cle}      \\
-  \texttt{0x2A} & \texttt{stfld}     & \texttt{0x2B} & \texttt{ldc.i4}   \\
+  \texttt{0x24} & \texttt{load.null}    & \texttt{0x25} & \texttt{not}      \\
+  \texttt{0x26} & \texttt{comp.gt}       & \texttt{0x27} & \texttt{cge}      \\
+  \texttt{0x28} & \texttt{comp.lt}       & \texttt{0x29} & \texttt{cle}      \\
+  \texttt{0x2A} & \texttt{store.fld}     & \texttt{0x2B} & \texttt{ldc.i4}   \\
   \texttt{0x2C} & \texttt{ldc.i8}    & \texttt{0x2D} & \texttt{ldc.r4}   \\
   \texttt{0x2E} & \texttt{ldc.r8}    &               &                   \\
   \bottomrule
@@ -1253,10 +1262,10 @@ you can check out the partnered implementation of ObjectIR.Stdlib
 https://github.com/OpenStudioCorp/ObjectIR.Stdlib
 
 *ObjectIR's standard library does not contain all functions required to 
-self host runtimes and such as of this documents date of publishing.
+self host infrastructure. this is constantly evolving.
 
 % ══════════════════════════════════════════════════════════════════════════════
-\section{Known Limitations (V2 -> V3}
+\section{Known Limitations (V2 -> V3)}
 \label{sec:limits}
 % ══════════════════════════════════════════════════════════════════════════════
 
@@ -1269,7 +1278,7 @@ But are being worked on for V3:
   see section \ref{sec:generics}
     
   \item \textbf{Typed arrays.} All arrays are typed. Distinct
-    \texttt{int[]}, \texttt{float[]}, etc. are available for use. hower runtimes must implement type safety.
+    \texttt{int[]}, \texttt{float[]}, etc. are available for use. 
     see section \ref{sec:arrays}
   
   \item \textbf{Inheritance-aware type tests.} \opcode{castclass} and
