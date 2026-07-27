@@ -991,38 +991,13 @@ tooling:
 \label{sec:conformance}
 % ══════════════════════════════════════════════════════════════════════════════
 
-A conforming ObjectIR V3 runtime \textbf{must}:
+This document does and will not define runtime conformance requirements,
+please check out \href{https://git.finite.ovh/Lattice}{the experimental lattice runtime} for more information on how
+to make a conforming runtime.
 
-\begin{enumerate}[leftmargin=2em]
-  \item Accept at least one of the three module formats
-    (TextIR, BSON, FOB/IR v3) as input.
-  \item Maintain a call stack of frames with independent evaluation stacks.
-  \item Implement all opcodes defined in Section~\ref{sec:isa}.
-  \item Apply the coercion rules of Section~\ref{sec:coerce} at instruction
-    boundaries.
-  \item Implement the call resolution order of Section~\ref{sec:callres}.
-  \item Implement structured exception handling as defined in
-    Section~\ref{sec:exceptions}, including the requirement that
-    \opcode{break}/\opcode{continue} tokens are not user-catchable.
-  \item Expose an entry-point invocation mechanism (canonically targeting a
-    static \texttt{Program.Main} with no parameters). see section see section \ref{sec:methodresolution}
-  \item Expose a named method invocation mechanism allowing the host to call
-    any method by qualified name with arbitrary arguments.
-  \item Expose a named method existence check that inspects module metadata
-    without executing code.
-\end{enumerate}
 
-A conforming runtime \textit{should} additionally:
 
-\begin{enumerate}[leftmargin=2em, resume]
-  \item Implement host type registration (Section~\ref{sec:hostinterop}).
-  \item Implement native method binding (Section~\ref{sec:hostinterop}).
-  \item Implement step and exception observability hooks.
-  \item Pre-register the built-in \texttt{ObjectIR.Stdlib} module.
-  for more information. see section \ref{sec:generics}
-\end{enumerate}
-
-% ══════════════════════════════════════════════════════════════════════════════
+ ══════════════════════════════════════════════════════════════════════════════
 \section{Worked Examples}
 % ══════════════════════════════════════════════════════════════════════════════
 
@@ -1047,22 +1022,22 @@ module Fibonacci version 1.0.0
 
 class Program {
     static method Fib(n: int32) -> int32 {
-        ldarg n
-        ldc.i4 2
+        load.arg n
+        load.const.I32 2
         clt
         if (stack) 
         {
-         	ldarg n
+         	load.arg n
          	ret
         }
 
-        ldarg n
-        ldc.i4 1
+        load.arg n
+        load.const.i32 1
         sub
         call Program.Fib(int32) -> int32
 
-        ldarg n
-        ldc.i4 2
+        load.arg n
+        load.const.i32 2
         sub
         call Program.Fib(int32) -> int32
 
@@ -1071,7 +1046,7 @@ class Program {
     }
 
     static method Main() -> void {
-        ldc.i4 10
+        load.const.i32 10
         call Program.Fib(int32) -> int32
         call System.Console.WriteLine(int32) -> void
         ret
@@ -1089,12 +1064,12 @@ class Vector2D {
     field y: float32
 
     constructor(x: float32, y: float32) {
-        ldarg this
-        ldarg x
-        stfld x
-        ldarg this
-        ldarg y
-        stfld y
+        load.arg this
+        load.arg x
+        store.fld x
+        load.arg this
+        load.arg y
+        store.fld y
         ret
     }
 
