@@ -991,11 +991,35 @@ tooling:
 \label{sec:conformance}
 % ══════════════════════════════════════════════════════════════════════════════
 
-This document does and will not define runtime conformance requirements,
-please check out \href{https://git.finite.ovh/Lattice}{the experimental lattice runtime} for more information on how
-to make a conforming runtime.
 
+A conforming ObjectIR v3 runtime \textbf{must}:
 
+\begin{enumerate}[leftmargin=2em]
+	\item Accept at least one of the three module formats
+	(TextIR, JSON, FOB/IR v3) as input.
+	\item Maintain a call stack of frames with independent evaluation stacks.
+	\item Implement all opcodes defined in Section~\ref{sec:isa}.
+	\item Apply the coercion rules of Section~\ref{sec:coerce} at instruction
+	boundaries.
+	\item Implement the call resolution order of Section~\ref{sec:callres}.
+	\item Implement structured exception handling as defined in
+	Section~\ref{sec:exceptions}, including the requirement that
+	\opcode{break}/\opcode{continue} tokens are not user-catchable.
+	\item Expose an entry-point invocation mechanism (canonically targeting a
+	static \texttt{Program.Main} with the 'args' parameter and 'System.String[]' as it's type).
+	\item Expose a named method invocation mechanism allowing the host to call
+	any method by qualified name with arbitrary arguments.
+	\item Expose a named method existence check that inspects module metadata
+	without executing code.
+\end{enumerate}
+
+A conforming runtime \textit{should} additionally:
+
+\begin{enumerate}[leftmargin=2em, resume]
+	\item Implement host type registration (Section~\ref{sec:hostinterop}).
+	\item Implement native method binding (Section~\ref{sec:hostinterop}).
+	\item Implement step and exception observability hooks.
+\end{enumerate}
 
  ══════════════════════════════════════════════════════════════════════════════
 \section{Worked Examples}
